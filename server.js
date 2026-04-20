@@ -37,7 +37,11 @@ const STATIC_FILES = new Map([
   ['login.html', 'text/html; charset=utf-8'],
   ['material.html', 'text/html; charset=utf-8'],
   ['materials.html', 'text/html; charset=utf-8'],
+  ['payment.html', 'text/html; charset=utf-8'],
   ['profile.html', 'text/html; charset=utf-8'],
+  ['register.html', 'text/html; charset=utf-8'],
+  ['video.html', 'text/html; charset=utf-8'],
+  ['videos.html', 'text/html; charset=utf-8'],
   ['schedule.html', 'text/html; charset=utf-8'],
   ['search.html', 'text/html; charset=utf-8'],
 ]);
@@ -52,6 +56,9 @@ const ADMIN_LOGIN = process.env.ADMIN_LOGIN || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
 const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+const ADMIN_PAYMENT_CARD = clean(process.env.ADMIN_PAYMENT_CARD || '8600 0000 0000 0000', 120);
+const ADMIN_PAYMENT_OWNER = clean(process.env.ADMIN_PAYMENT_OWNER || 'Cliffs Admin', 120);
+const ADMIN_COMMISSION_PERCENT = Math.max(0, Math.min(100, Number(process.env.ADMIN_COMMISSION_PERCENT || 10) || 10));
 const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || '';
 const CLOUD_KEY = process.env.CLOUDINARY_API_KEY || '';
 const CLOUD_SECRET = process.env.CLOUDINARY_API_SECRET || '';
@@ -82,6 +89,15 @@ let studentPayments;
 let teacherPayrolls;
 let financeExpenses;
 let siteContent;
+let teacherFollowers;
+let groupJoinRequests;
+let videoLessons;
+let videoLessonLikes;
+let videoLessonComments;
+let liveSessions;
+let liveSignals;
+let liveSessionLikes;
+let liveSessionComments;
 
 function loadEnv(file) {
   if (!fs.existsSync(file)) return;
@@ -113,6 +129,25 @@ function json(res, code, body) {
 
 function text(res, code, body, type = 'text/plain; charset=utf-8') {
   send(res, code, body, type);
+}
+
+function mimeType(name) {
+  const ext = path.extname(name).toLowerCase();
+  return {
+    '.html': 'text/html; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.js': 'application/javascript; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.svg': 'image/svg+xml',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.webmanifest': 'application/manifest+json',
+    '.ico': 'image/x-icon',
+    '.woff2': 'font/woff2',
+    '.woff': 'font/woff',
+    '.ttf': 'font/ttf'
+  }[ext] || 'application/octet-stream';
 }
 
 function redir(res, to) {
@@ -219,6 +254,7 @@ function pubUser(u) {
         bio: u.bio || '',
         avatar: u.avatar || '',
         role: u.role || 'member',
+        approvalStatus: approvalStatus(u.approvalStatus),
         mentorTeacherId: u.mentorTeacherId ? String(u.mentorTeacherId) : '',
         studyGroupIds: (u.studyGroupIds || []).map((id) => String(id)),
       }
@@ -231,8 +267,82 @@ function preview(msg) {
   return 'Yangi xabar';
 }
 
+const MESSAGE_REACTION_SET = new Set(['👍', '❤️', '🔥', '👏', '😂', '😮', '😢']);
+
+function reactionEmoji(value) {
+  const emoji = clean(value, 8);
+  if (!MESSAGE_REACTION_SET.has(emoji)) throw err('Reaksiya noto‘g‘ri');
+  return emoji;
+}
+
+function normalizeMessageReactions(raw = [], viewerId = null) {
+  const viewerKey = viewerId ? String(viewerId) : '';
+  return (Array.isArray(raw) ? raw : [])
+    .map((item) => {
+      const emoji = clean(item?.emoji, 8);
+      if (!MESSAGE_REACTION_SET.has(emoji)) return null;
+      const userIds = uniqIds(item?.userIds || []);
+      const userKeys = userIds.map((id) => String(id));
+      return {
+        emoji,
+        count: userKeys.length,
+        reacted: viewerKey ? userKeys.includes(viewerKey) : false,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.count - a.count || a.emoji.localeCompare(b.emoji));
+}
+
 function safeRegex(v) {
   return String(v || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function youtubeId(value) {
+  const raw = clean(value, 600);
+  if (!raw) return '';
+  if (/^[a-zA-Z0-9_-]{11}$/.test(raw)) return raw;
+  let textValue = raw;
+  try {
+    const parsed = new URL(raw);
+    const host = parsed.hostname.replace(/^www\./i, '').toLowerCase();
+    if (host === 'youtu.be') {
+      textValue = parsed.pathname.replace(/^\/+/, '').split('/')[0] || '';
+      return /^[a-zA-Z0-9_-]{11}$/.test(textValue) ? textValue : '';
+    }
+    if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'music.youtube.com') {
+      const direct = parsed.searchParams.get('v');
+      if (direct && /^[a-zA-Z0-9_-]{11}$/.test(direct)) return direct;
+      const parts = parsed.pathname.split('/').filter(Boolean);
+      for (const i of [1, 2]) {
+        const valuePart = parts[i];
+        if (valuePart && /^[a-zA-Z0-9_-]{11}$/.test(valuePart) && ['embed', 'shorts', 'live'].includes(parts[0] || '')) {
+          return valuePart;
+        }
+      }
+    }
+  } catch {}
+  const fallback = raw.match(/(?:v=|\/embed\/|\/shorts\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return fallback ? fallback[1] : '';
+}
+
+function youtubeMeta(link) {
+  const id = youtubeId(link);
+  if (!id) {
+    return {
+      youtubeId: '',
+      youtubeEmbedUrl: '',
+      youtubeWatchUrl: '',
+      youtubeThumbnail: '',
+      hasYoutubeVideo: false,
+    };
+  }
+  return {
+    youtubeId: id,
+    youtubeEmbedUrl: `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&controls=1&iv_load_policy=3`,
+    youtubeWatchUrl: `https://www.youtube.com/watch?v=${id}`,
+    youtubeThumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+    hasYoutubeVideo: true,
+  };
 }
 
 function parseBody(req, max = 15 * 1024 * 1024) {
@@ -271,6 +381,14 @@ async function auth(req) {
   const user = await users.findOne({ _id: oid(p.id) });
   if (!user) throw err('User topilmadi', 401);
   return user;
+}
+
+async function optionalAuth(req) {
+  try {
+    return await auth(req);
+  } catch {
+    return null;
+  }
 }
 
 function adminHeader(req) {
@@ -342,6 +460,7 @@ async function hydrateChats(list, viewerId) {
       avatar,
       subtitle,
       description: chat.description || '',
+      username: chat.username || '',
       updatedAt: chat.updatedAt || chat.createdAt,
       lastMessageAt: chat.lastMessageAt || chat.updatedAt || chat.createdAt,
       lastMessagePreview: chat.lastMessagePreview || 'Suhbatni boshlang',
@@ -350,6 +469,7 @@ async function hydrateChats(list, viewerId) {
       memberCount: members.length,
       user: pubUser(user),
       subject: chat.subject || '',
+      coursePrice: roundAmount(chat.coursePrice || 0),
       teacherId: chat.teacherId ? String(chat.teacherId) : '',
       teacher: pubUser(map.get(String(chat.teacherId || ''))),
       groupAdminId: chat.groupAdminId ? String(chat.groupAdminId) : '',
@@ -357,18 +477,47 @@ async function hydrateChats(list, viewerId) {
   });
 }
 
-async function hydrateMessages(list) {
-  const ids = uniqIds(list.map((m) => m.senderId));
-  const userDocs = ids.length ? await users.find({ _id: { $in: ids } }).toArray() : [];
-  const map = new Map(userDocs.map((u) => [String(u._id), u]));
-  return list.map((m) => ({
-    id: String(m._id),
-    text: m.text || '',
-    mediaUrl: m.mediaUrl || '',
-    mediaType: m.mediaType || '',
-    createdAt: m.createdAt,
-    sender: pubUser(map.get(String(m.senderId))),
-  }));
+async function hydrateMessages(list, viewerId = null) {
+  const replyIds = uniqIds(list.map((m) => m.replyToId));
+  const [replyDocs, userDocs] = await Promise.all([
+    replyIds.length ? messages.find({ _id: { $in: replyIds } }).toArray() : [],
+    (() => {
+      const senderIds = uniqIds([
+        ...list.map((m) => m.senderId),
+        ...(replyIds.length ? [] : []),
+      ]);
+      return senderIds.length ? users.find({ _id: { $in: senderIds } }).toArray() : [];
+    })(),
+  ]);
+  const replyMap = new Map(replyDocs.map((item) => [String(item._id), item]));
+  const extraSenderIds = uniqIds(replyDocs.map((item) => item.senderId));
+  const allUserIds = uniqIds([...(userDocs || []).map((item) => item._id), ...extraSenderIds]);
+  const allUsersDocs = allUserIds.length ? await users.find({ _id: { $in: allUserIds } }).toArray() : [];
+  const userMap = new Map(allUsersDocs.map((u) => [String(u._id), u]));
+
+  return list.map((m) => {
+    const reply = m.replyToId ? replyMap.get(String(m.replyToId)) : null;
+    return {
+      id: String(m._id),
+      text: m.text || '',
+      mediaUrl: m.mediaUrl || '',
+      mediaType: m.mediaType || '',
+      createdAt: m.createdAt,
+      updatedAt: m.updatedAt || m.createdAt,
+      editedAt: m.editedAt || null,
+      sender: pubUser(userMap.get(String(m.senderId))),
+      replyToId: m.replyToId ? String(m.replyToId) : '',
+      replyTo: reply
+        ? {
+            id: String(reply._id),
+            text: clean(reply.text, 180),
+            mediaUrl: reply.mediaUrl || '',
+            sender: pubUser(userMap.get(String(reply.senderId))),
+          }
+        : null,
+      reactions: normalizeMessageReactions(m.reactions || [], viewerId),
+    };
+  });
 }
 
 async function hydrateAdminMessages(list) {
@@ -450,6 +599,24 @@ function amountValue(input, label = 'Summa', allowZero = false) {
   if (allowZero ? rounded < 0 : rounded <= 0) throw err(`${label} musbat bo‘lsin`);
   if (rounded > 1_000_000_000_000) throw err(`${label} juda katta`);
   return rounded;
+}
+
+function optionalAmount(input, label = 'Summa', fallback = 0) {
+  if (input === undefined || input === null || input === '') return roundAmount(fallback);
+  return amountValue(input, label, true);
+}
+
+function approvalStatus(value) {
+  const key = clean(value, 20).toLowerCase();
+  if (['approved', 'pending', 'rejected'].includes(key)) return key;
+  return 'approved';
+}
+
+function approvalQuery(status = 'approved') {
+  const target = approvalStatus(status);
+  return target === 'approved'
+    ? { $or: [{ approvalStatus: 'approved' }, { approvalStatus: { $exists: false } }] }
+    : { approvalStatus: target };
 }
 
 function dueDay(value, fallback = 5) {
@@ -596,9 +763,259 @@ async function hydrateAttendanceRows(rows, viewerId = null) {
   });
 }
 
+async function teacherFollowSnapshot(teacherIds, viewerId = null) {
+  const normalizedTeacherIds = uniqIds(teacherIds || []);
+  if (!normalizedTeacherIds.length) return { counts: new Map(), following: new Set() };
+  const [followerDocs, myDocs] = await Promise.all([
+    teacherFollowers.find({ teacherId: { $in: normalizedTeacherIds } }, { projection: { teacherId: 1 } }).toArray(),
+    viewerId ? teacherFollowers.find({ teacherId: { $in: normalizedTeacherIds }, followerId: oid(viewerId) }, { projection: { teacherId: 1 } }).toArray() : [],
+  ]);
+  const counts = new Map();
+  for (const row of followerDocs) {
+    const key = String(row.teacherId || '');
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  const following = new Set(myDocs.map((row) => String(row.teacherId || '')));
+  return { counts, following };
+}
+
+async function hydrateVideoLessons(list, viewerId = null) {
+  const teacherIds = uniqIds(list.map((item) => item.teacherId));
+  const videoIds = uniqIds(list.map((item) => item._id));
+  const [teacherDocs, likeDocs, commentDocs, viewerLikeDocs] = await Promise.all([
+    teacherIds.length ? users.find({ _id: { $in: teacherIds } }).toArray() : [],
+    videoIds.length ? videoLessonLikes.find({ videoId: { $in: videoIds } }, { projection: { videoId: 1, userId: 1 } }).toArray() : [],
+    videoIds.length ? videoLessonComments.find({ videoId: { $in: videoIds } }, { projection: { videoId: 1 } }).toArray() : [],
+    viewerId && videoIds.length ? videoLessonLikes.find({ videoId: { $in: videoIds }, userId: oid(viewerId) }, { projection: { videoId: 1 } }).toArray() : [],
+  ]);
+  const teacherMap = new Map(teacherDocs.map((item) => [String(item._id), item]));
+  const likesMap = new Map();
+  for (const item of likeDocs) {
+    const key = String(item.videoId || '');
+    likesMap.set(key, (likesMap.get(key) || 0) + 1);
+  }
+  const commentsMap = new Map();
+  for (const item of commentDocs) {
+    const key = String(item.videoId || '');
+    commentsMap.set(key, (commentsMap.get(key) || 0) + 1);
+  }
+  const likedSet = new Set(viewerLikeDocs.map((item) => String(item.videoId || '')));
+  return list.map((item) => {
+    const yt = youtubeMeta(item.link || item.youtubeWatchUrl || '');
+    const id = String(item._id);
+    return {
+      id,
+      teacherId: item.teacherId ? String(item.teacherId) : '',
+      teacher: pubUser(teacherMap.get(String(item.teacherId || ''))),
+      title: item.title || '',
+      description: item.description || '',
+      link: item.link || '',
+      youtubeId: item.youtubeId || yt.youtubeId || '',
+      youtubeEmbedUrl: item.youtubeEmbedUrl || yt.youtubeEmbedUrl || '',
+      youtubeWatchUrl: item.youtubeWatchUrl || yt.youtubeWatchUrl || item.link || '',
+      youtubeThumbnail: item.youtubeThumbnail || yt.youtubeThumbnail || '',
+      hasYoutubeVideo: item.hasYoutubeVideo === false ? false : !!(item.youtubeId || yt.youtubeId),
+      tags: asList(item.tags || [], 12, 30),
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt || item.createdAt,
+      likesCount: likesMap.get(id) || 0,
+      commentsCount: commentsMap.get(id) || 0,
+      isLiked: likedSet.has(id),
+      score: (likesMap.get(id) || 0) * 2 + (commentsMap.get(id) || 0),
+    };
+  });
+}
+
+async function hydrateVideoComments(list) {
+  const userIds = uniqIds(list.map((item) => item.userId));
+  const userDocs = userIds.length ? await users.find({ _id: { $in: userIds } }).toArray() : [];
+  const userMap = new Map(userDocs.map((item) => [String(item._id), item]));
+  return list.map((item) => ({
+    id: String(item._id),
+    videoId: String(item.videoId),
+    userId: String(item.userId),
+    text: item.text || '',
+    createdAt: item.createdAt,
+    user: pubUser(userMap.get(String(item.userId || ''))),
+  }));
+}
+
+async function hydrateLiveSessions(list, viewerId = null) {
+  const teacherIds = uniqIds(list.map((item) => item.teacherId));
+  const sessionIds = uniqIds(list.map((item) => item._id));
+  const participantIds = uniqIds(list.flatMap((item) => item.participants || []));
+  const [teacherDocs, participantDocs, likeDocs, commentDocs, viewerLikeDocs] = await Promise.all([
+    teacherIds.length ? users.find({ _id: { $in: teacherIds } }).toArray() : [],
+    participantIds.length ? users.find({ _id: { $in: participantIds } }).toArray() : [],
+    sessionIds.length ? liveSessionLikes.find({ sessionId: { $in: sessionIds } }, { projection: { sessionId: 1 } }).toArray() : [],
+    sessionIds.length ? liveSessionComments.find({ sessionId: { $in: sessionIds } }, { projection: { sessionId: 1 } }).toArray() : [],
+    viewerId && sessionIds.length ? liveSessionLikes.find({ sessionId: { $in: sessionIds }, userId: oid(viewerId) }, { projection: { sessionId: 1 } }).toArray() : [],
+  ]);
+  const teacherMap = new Map(teacherDocs.map((item) => [String(item._id), item]));
+  const participantMap = new Map(participantDocs.map((item) => [String(item._id), item]));
+  const likesMap = new Map();
+  for (const item of likeDocs) {
+    const key = String(item.sessionId || '');
+    likesMap.set(key, (likesMap.get(key) || 0) + 1);
+  }
+  const commentsMap = new Map();
+  for (const item of commentDocs) {
+    const key = String(item.sessionId || '');
+    commentsMap.set(key, (commentsMap.get(key) || 0) + 1);
+  }
+  const likedSet = new Set(viewerLikeDocs.map((item) => String(item.sessionId || '')));
+
+  return list.map((item) => {
+    const id = String(item._id);
+    const teacher = teacherMap.get(String(item.teacherId || ''));
+    const participants = (item.participants || [])
+      .map((member) => participantMap.get(String(member)))
+      .filter(Boolean)
+      .map(pubUser);
+    return {
+      id,
+      title: item.title || 'Jonli efir',
+      description: item.description || '',
+      thumbnail: item.thumbnail || '',
+      active: !!item.active,
+      startedAt: item.startedAt || item.createdAt,
+      updatedAt: item.updatedAt || item.startedAt || item.createdAt,
+      teacherId: item.teacherId ? String(item.teacherId) : '',
+      teacher: pubUser(teacher),
+      participants,
+      participantCount: participants.length,
+      likesCount: likesMap.get(id) || 0,
+      commentsCount: commentsMap.get(id) || 0,
+      isLiked: likedSet.has(id),
+    };
+  });
+}
+
+async function hydrateLiveComments(list) {
+  const userIds = uniqIds(list.map((item) => item.userId));
+  const docs = userIds.length ? await users.find({ _id: { $in: userIds } }).toArray() : [];
+  const map = new Map(docs.map((item) => [String(item._id), item]));
+  return list.map((item) => ({
+    id: String(item._id),
+    sessionId: String(item.sessionId),
+    userId: String(item.userId),
+    text: item.text || '',
+    createdAt: item.createdAt,
+    user: pubUser(map.get(String(item.userId || ''))),
+  }));
+}
+
+async function buildLandingPayload(viewerId = null) {
+  const site = await readSiteContent();
+  const [teacherDocs, groupDocs, paymentDocs, videoDocs, liveDocs] = await Promise.all([
+    users.find({ role: 'teacher', ...approvalQuery('approved') }).sort({ createdAt: -1 }).limit(240).toArray(),
+    chats.find({ type: 'group' }).sort({ updatedAt: -1 }).limit(800).toArray(),
+    studentPayments.find({}).sort({ paidAt: -1, createdAt: -1 }).limit(10000).toArray(),
+    videoLessons.find({}).sort({ createdAt: -1 }).limit(40).toArray(),
+    liveSessions.find({ active: true }).sort({ startedAt: -1, createdAt: -1 }).limit(20).toArray(),
+  ]);
+  const teacherIds = teacherDocs.map((item) => item._id);
+  const followSnapshot = await teacherFollowSnapshot(teacherIds, viewerId);
+  const groupsByTeacher = new Map();
+  for (const group of groupDocs) {
+    const key = String(group.teacherId || '');
+    const list = groupsByTeacher.get(key) || [];
+    list.push(group);
+    groupsByTeacher.set(key, list);
+  }
+
+  const paymentsByGroup = new Map();
+  for (const payment of paymentDocs) {
+    const key = String(payment.groupId || '');
+    if (!key) continue;
+    const stats = paymentsByGroup.get(key) || { paidTotal: 0, paymentsCount: 0 };
+    stats.paidTotal += Number(payment.amount || 0);
+    stats.paymentsCount += 1;
+    paymentsByGroup.set(key, stats);
+  }
+
+  const liveByTeacher = new Set(liveDocs.map((item) => String(item.teacherId || '')));
+  const topTeachers = teacherDocs
+    .map((teacher) => {
+      const key = String(teacher._id);
+      const teacherGroups = groupsByTeacher.get(key) || [];
+      const studentCount = teacherGroups.reduce((acc, group) => {
+        const memberCount = (group.members || []).filter((member) => String(member) !== key).length;
+        return acc + memberCount;
+      }, 0);
+      return {
+        ...pubUser(teacher),
+        followerCount: followSnapshot.counts.get(key) || 0,
+        studentCount,
+        groupCount: teacherGroups.length,
+        isLive: liveByTeacher.has(key),
+        isFollowing: followSnapshot.following.has(key),
+      };
+    })
+    .sort((a, b) => (b.followerCount - a.followerCount) || (b.studentCount - a.studentCount))
+    .slice(0, 8);
+
+  const courseStats = groupDocs
+    .map((group) => {
+      const key = String(group._id);
+      const teacherId = String(group.teacherId || '');
+      const memberCount = (group.members || []).filter((member) => String(member) !== teacherId).length;
+      const paid = paymentsByGroup.get(key) || { paidTotal: 0, paymentsCount: 0 };
+      return {
+        id: key,
+        name: group.name || 'Guruh',
+        subject: group.subject || '',
+        coursePrice: roundAmount(group.coursePrice || 0),
+        teacherId,
+        memberCount,
+        paidTotal: roundAmount(paid.paidTotal),
+        paymentsCount: paid.paymentsCount,
+      };
+    });
+
+  const topCourses = [...courseStats]
+    .sort((a, b) => (b.memberCount - a.memberCount) || (b.paidTotal - a.paidTotal))
+    .slice(0, 10);
+
+  const topCoursesByPayments = [...courseStats]
+    .sort((a, b) => (b.paidTotal - a.paidTotal) || (b.memberCount - a.memberCount))
+    .slice(0, 6);
+
+  const hydratedVideos = await hydrateVideoLessons(videoDocs, viewerId);
+  const featuredVideos = [...hydratedVideos]
+    .sort((a, b) => (b.score - a.score) || (new Date(b.createdAt) - new Date(a.createdAt)))
+    .slice(0, 8);
+
+  const activeLives = (await hydrateLiveSessions(liveDocs, viewerId)).slice(0, 10);
+
+  return {
+    site,
+    highlights: {
+      topTeachers,
+      topCourses,
+      topCoursesByPayments,
+      featuredVideos,
+      activeLives,
+      totals: {
+        teachers: teacherDocs.length,
+        groups: groupDocs.length,
+        videos: hydratedVideos.length,
+        live: activeLives.length,
+      },
+    },
+  };
+}
+
 async function buildUserProfile(viewer, targetId) {
   const user = await users.findOne({ _id: targetId });
   if (!user) throw err('Foydalanuvchi topilmadi', 404);
+
+  const isTeacherProfile = isRole(user, 'teacher');
+  const [followerCount, followingCount, viewerFollowDoc] = await Promise.all([
+    isTeacherProfile ? teacherFollowers.countDocuments({ teacherId: targetId }) : 0,
+    teacherFollowers.countDocuments({ followerId: targetId }),
+    isTeacherProfile && viewer?._id ? teacherFollowers.findOne({ teacherId: targetId, followerId: viewer._id }) : null,
+  ]);
 
   const statsData = await stats(targetId);
   const groupDocs = await chats
@@ -670,6 +1087,13 @@ async function buildUserProfile(viewer, targetId) {
     attendanceSummary,
     attendanceFeed,
     finance,
+    social: {
+      followerCount,
+      followingCount,
+      isFollowing: !!viewerFollowDoc,
+      courseCount: isTeacherProfile ? groups.length : 0,
+      studentCount: isTeacherProfile ? students.length : 0,
+    },
     isSelf: String(viewer?._id || '') === String(targetId),
   };
 }
@@ -704,7 +1128,13 @@ function defaultSiteContent() {
     address: '',
     phone: '',
     telegram: '',
+    email: '',
     workingHours: 'Dushanba - Shanba, 09:00 - 20:00',
+    heroPrimaryCta: "Ro'yxatdan o'tish",
+    heroSecondaryCta: 'Kurslar',
+    footerTitle: "Cliffs o'quv markazi",
+    footerDescription: "Sifatli ta'lim va zamonaviy o'quv jarayoni.",
+    footerCopyright: '© 2026 Cliffs. Barcha huquqlar himoyalangan.',
     courses: ['Ingliz tili', 'Rus tili', 'Mobile dasturlash', 'Matematika', 'IELTS tayyorlov'],
     gallery: [],
   };
@@ -742,7 +1172,13 @@ function normalizeSiteContent(input = {}, base = defaultSiteContent()) {
     address: clean(merged.address, 240),
     phone: clean(merged.phone, 80),
     telegram: clean(merged.telegram, 120),
+    email: clean(merged.email, 120),
     workingHours: clean(merged.workingHours, 120),
+    heroPrimaryCta: clean(merged.heroPrimaryCta, 50) || base.heroPrimaryCta,
+    heroSecondaryCta: clean(merged.heroSecondaryCta, 50) || base.heroSecondaryCta,
+    footerTitle: clean(merged.footerTitle, 90) || base.footerTitle,
+    footerDescription: clean(merged.footerDescription, 280) || base.footerDescription,
+    footerCopyright: clean(merged.footerCopyright, 180) || base.footerCopyright,
     courses: asList(merged.courses, 12, 90),
     gallery: asList(merged.gallery, 24, 500),
   };
@@ -823,12 +1259,18 @@ async function hydrateMaterials(list) {
   const groupMap = new Map(groupDocs.map((group) => [String(group._id), group]));
   return list.map((item) => {
     const group = groupMap.get(String(item.groupId || ''));
+    const yt = youtubeMeta(item.link || '');
     return {
       id: String(item._id),
       type: item.type || 'material',
       title: item.title || '',
       description: item.description || '',
       link: item.link || '',
+      youtubeId: yt.youtubeId,
+      youtubeEmbedUrl: yt.youtubeEmbedUrl,
+      youtubeWatchUrl: yt.youtubeWatchUrl,
+      youtubeThumbnail: yt.youtubeThumbnail,
+      hasYoutubeVideo: yt.hasYoutubeVideo,
       dueDate: item.dueDate || '',
       createdAt: item.createdAt,
       authorName: item.createdByName || 'Admin',
@@ -1198,16 +1640,40 @@ async function deleteChatCascade(chatId) {
   await announcements.deleteMany({ groupId: chatId });
   await schedules.deleteMany({ groupId: chatId });
   await materials.deleteMany({ groupId: chatId });
+  await groupJoinRequests.deleteMany({ groupId: chatId });
   await chats.deleteOne({ _id: chatId });
 }
 
 async function deleteUserCascade(userId) {
   const relatedChats = await chats.find({ members: userId }).toArray();
+  const ownedVideoDocs = await videoLessons.find({ teacherId: userId }, { projection: { _id: 1 } }).toArray();
+  const ownedVideoIds = ownedVideoDocs.map((item) => item._id);
+  const ownedLiveDocs = await liveSessions.find({ teacherId: userId }, { projection: { _id: 1 } }).toArray();
+  const ownedLiveIds = ownedLiveDocs.map((item) => item._id);
   await messages.deleteMany({ senderId: userId });
   await materialSubmissions.deleteMany({ studentId: userId });
   await tuitionPlans.deleteOne({ studentId: userId });
   await studentPayments.deleteMany({ studentId: userId });
   await teacherPayrolls.deleteMany({ teacherId: userId });
+  await teacherFollowers.deleteMany({ $or: [{ teacherId: userId }, { followerId: userId }] });
+  await groupJoinRequests.deleteMany({ $or: [{ userId }, { teacherId: userId }, { processedBy: userId }] });
+  if (ownedVideoIds.length) {
+    await videoLessonLikes.deleteMany({ videoId: { $in: ownedVideoIds } });
+    await videoLessonComments.deleteMany({ videoId: { $in: ownedVideoIds } });
+    await videoLessons.deleteMany({ _id: { $in: ownedVideoIds } });
+  }
+  await videoLessonLikes.deleteMany({ userId });
+  await videoLessonComments.deleteMany({ userId });
+  if (ownedLiveIds.length) {
+    await liveSignals.deleteMany({ sessionId: { $in: ownedLiveIds } });
+    await liveSessionLikes.deleteMany({ sessionId: { $in: ownedLiveIds } });
+    await liveSessionComments.deleteMany({ sessionId: { $in: ownedLiveIds } });
+    await liveSessions.deleteMany({ _id: { $in: ownedLiveIds } });
+  }
+  await liveSessions.updateMany({ participants: userId }, { $pull: { participants: userId }, $set: { updatedAt: new Date() } });
+  await liveSignals.deleteMany({ $or: [{ fromUserId: userId }, { toUserId: userId }] });
+  await liveSessionLikes.deleteMany({ userId });
+  await liveSessionComments.deleteMany({ userId });
   for (const chat of relatedChats) {
     if (chat.type === 'direct' || (chat.members || []).length <= 2) {
       await deleteChatCascade(chat._id);
@@ -1265,9 +1731,19 @@ async function initDb() {
   teacherPayrolls = db.collection('teacherPayrolls');
   financeExpenses = db.collection('financeExpenses');
   siteContent = db.collection('siteContent');
+  teacherFollowers = db.collection('teacherFollowers');
+  groupJoinRequests = db.collection('groupJoinRequests');
+  videoLessons = db.collection('videoLessons');
+  videoLessonLikes = db.collection('videoLessonLikes');
+  videoLessonComments = db.collection('videoLessonComments');
+  liveSessions = db.collection('liveSessions');
+  liveSignals = db.collection('liveSignals');
+  liveSessionLikes = db.collection('liveSessionLikes');
+  liveSessionComments = db.collection('liveSessionComments');
   await Promise.all([
     users.createIndex({ username: 1 }, { unique: true }),
     users.createIndex({ phone: 1 }, { unique: true, sparse: true }),
+    users.createIndex({ approvalStatus: 1, createdAt: -1 }),
     chats.createIndex({ members: 1, updatedAt: -1 }),
     chats.createIndex({ type: 1, updatedAt: -1 }),
     messages.createIndex({ chatId: 1, createdAt: -1 }),
@@ -1289,6 +1765,21 @@ async function initDb() {
     teacherPayrolls.createIndex({ month: 1, paidAt: -1 }),
     financeExpenses.createIndex({ month: 1, spentAt: -1 }),
     siteContent.createIndex({ updatedAt: -1 }),
+    teacherFollowers.createIndex({ teacherId: 1, followerId: 1 }, { unique: true }),
+    teacherFollowers.createIndex({ followerId: 1, createdAt: -1 }),
+    groupJoinRequests.createIndex({ status: 1, createdAt: -1 }),
+    groupJoinRequests.createIndex({ userId: 1, status: 1, createdAt: -1 }),
+    groupJoinRequests.createIndex({ groupId: 1, status: 1, createdAt: -1 }),
+    videoLessons.createIndex({ teacherId: 1, createdAt: -1 }),
+    videoLessons.createIndex({ createdAt: -1 }),
+    videoLessonLikes.createIndex({ videoId: 1, userId: 1 }, { unique: true }),
+    videoLessonLikes.createIndex({ userId: 1, createdAt: -1 }),
+    videoLessonComments.createIndex({ videoId: 1, createdAt: -1 }),
+    liveSessions.createIndex({ active: 1, startedAt: -1 }),
+    liveSessions.createIndex({ teacherId: 1, active: 1, startedAt: -1 }),
+    liveSignals.createIndex({ sessionId: 1, toUserId: 1, createdAt: 1 }),
+    liveSessionLikes.createIndex({ sessionId: 1, userId: 1 }, { unique: true }),
+    liveSessionComments.createIndex({ sessionId: 1, createdAt: -1 }),
   ]);
 }
 
@@ -1300,7 +1791,42 @@ async function api(req, res, url) {
     const user = username(key);
     const doc = await users.findOne({ $or: [{ username: user }, ...(tel ? [{ phone: tel }] : [])] });
     if (!doc || !check(String(b.password || ''), doc.passwordHash)) throw err('Login yoki parol xato', 401);
+    const status = approvalStatus(doc.approvalStatus);
+    if (status === 'pending') throw err('Akkaunt admin tasdig‘ini kutmoqda', 403);
+    if (status === 'rejected') throw err('Ro‘yxatdan o‘tish so‘rovi rad etilgan. Admin bilan bog‘laning', 403);
     return json(res, 200, { token: token(doc._id), user: pubUser(doc), stats: await stats(doc._id) });
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/register') {
+    const b = await body(req);
+    const fullName = clean(b.fullName, 40);
+    const user = username(b.username);
+    const tel = phone(b.phone);
+    const pass = String(b.password || '');
+    if (fullName.length < 2) throw err('Ism kamida 2 ta harf bo‘lsin');
+    if (user.length < 3) throw err('Username kamida 3 ta harf bo‘lsin');
+    if (pass.length < 6) throw err('Parol kamida 6 ta bo‘lsin');
+    if (tel.length < 7) throw err('Telefon raqamini kiriting');
+    const exists = await users.findOne({ $or: [{ username: user }, { phone: tel }] });
+    if (exists) throw err('Username yoki telefon band', 409);
+    const now = new Date();
+    await users.insertOne({
+      fullName,
+      username: user,
+      phone: tel,
+      passwordHash: hash(pass),
+      bio: clean(b.bio, 160),
+      avatar: '',
+      role: 'abituriyent',
+      approvalStatus: 'pending',
+      mentorTeacherId: null,
+      studyGroupIds: [],
+      createdAt: now,
+      updatedAt: now,
+      approvedAt: null,
+      rejectedAt: null,
+    });
+    return json(res, 201, { ok: true, message: 'So‘rov yuborildi. Admin tasdiqlagach tizimga kira olasiz.' });
   }
 
   if (req.method === 'POST' && url.pathname === '/api/admin/login') {
@@ -1313,6 +1839,127 @@ async function api(req, res, url) {
 
   if (req.method === 'GET' && url.pathname === '/api/public/site-content') {
     return json(res, 200, { site: await readSiteContent() });
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/public/payment-config') {
+    return json(res, 200, {
+      payment: {
+        adminCard: ADMIN_PAYMENT_CARD,
+        owner: ADMIN_PAYMENT_OWNER,
+        adminCommissionPercent: ADMIN_COMMISSION_PERCENT,
+        note: `${ADMIN_COMMISSION_PERCENT}% admin ulushi eslatmasi`,
+      },
+    });
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/public/landing') {
+    const viewer = await optionalAuth(req);
+    return json(res, 200, await buildLandingPayload(viewer?._id || null));
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/public/teachers') {
+    const viewer = await optionalAuth(req);
+    const q = clean(url.searchParams.get('q'), 60);
+    const rx = q ? new RegExp(safeRegex(q), 'i') : null;
+    const teacherDocs = await users
+      .find({
+        $and: [
+          { role: 'teacher' },
+          approvalQuery('approved'),
+          ...(rx ? [{ $or: [{ fullName: rx }, { username: rx }, { bio: rx }, { phone: rx }] }] : []),
+        ],
+      })
+      .sort({ createdAt: -1 })
+      .limit(120)
+      .toArray();
+    const teacherIds = teacherDocs.map((item) => item._id);
+    const [groupsByTeacher, followSnapshot] = await Promise.all([
+      teacherIds.length ? chats.find({ type: 'group', teacherId: { $in: teacherIds } }).toArray() : [],
+      teacherFollowSnapshot(teacherIds, viewer?._id || null),
+    ]);
+    const groupsMap = new Map();
+    for (const group of groupsByTeacher) {
+      const key = String(group.teacherId || '');
+      const list = groupsMap.get(key) || [];
+      list.push(group);
+      groupsMap.set(key, list);
+    }
+    const teachers = teacherDocs.map((teacher) => {
+      const teacherKey = String(teacher._id);
+      const courses = (groupsMap.get(teacherKey) || []).map((group) => group.subject || group.name || '').filter(Boolean).slice(0, 6);
+      return {
+        ...pubUser(teacher),
+        followerCount: followSnapshot.counts.get(teacherKey) || 0,
+        isFollowing: followSnapshot.following.has(teacherKey),
+        groupCount: (groupsMap.get(teacherKey) || []).length,
+        courses,
+      };
+    });
+    return json(res, 200, { teachers });
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/public/live/active') {
+    const viewer = await optionalAuth(req);
+    const list = await liveSessions.find({ active: true }).sort({ startedAt: -1, createdAt: -1 }).limit(20).toArray();
+    return json(res, 200, { sessions: await hydrateLiveSessions(list, viewer?._id || null) });
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/public/videos') {
+    const viewer = await optionalAuth(req);
+    const q = clean(url.searchParams.get('q'), 80);
+    const rx = q ? new RegExp(safeRegex(q), 'i') : null;
+    const teacherId = oid(url.searchParams.get('teacherId'));
+    const sortBy = clean(url.searchParams.get('sort'), 24).toLowerCase() || 'trending';
+    const list = await videoLessons
+      .find({
+        ...(teacherId ? { teacherId } : {}),
+        ...(rx ? { $or: [{ title: rx }, { description: rx }, { tags: rx }] } : {}),
+      })
+      .sort({ createdAt: -1 })
+      .limit(220)
+      .toArray();
+    let videos = await hydrateVideoLessons(list, viewer?._id || null);
+    if (sortBy === 'new' || sortBy === 'newest') {
+      videos = videos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    } else if (sortBy === 'likes' || sortBy === 'top') {
+      videos = videos.sort((a, b) => (b.likesCount - a.likesCount) || (b.commentsCount - a.commentsCount));
+    } else {
+      videos = videos.sort((a, b) => (b.score - a.score) || (new Date(b.createdAt) - new Date(a.createdAt)));
+    }
+    return json(res, 200, { videos, canWatch: !!viewer?._id });
+  }
+
+  const publicParts = url.pathname.split('/').filter(Boolean);
+  if (publicParts[0] === 'api' && publicParts[1] === 'public' && publicParts[2] === 'videos' && publicParts[3] && publicParts.length === 4 && req.method === 'GET') {
+    const viewer = await optionalAuth(req);
+    const videoId = oid(publicParts[3]);
+    if (!videoId) throw err('Video ID noto‘g‘ri');
+    const videoDoc = await videoLessons.findOne({ _id: videoId });
+    if (!videoDoc) throw err('Video topilmadi', 404);
+    const [videoHydrated, commentDocs] = await Promise.all([
+      hydrateVideoLessons([videoDoc], viewer?._id || null),
+      videoLessonComments.find({ videoId }).sort({ createdAt: -1 }).limit(120).toArray(),
+    ]);
+    const comments = await hydrateVideoComments(commentDocs);
+    return json(res, 200, {
+      video: videoHydrated[0] || null,
+      comments,
+      canWatch: !!viewer?._id,
+    });
+  }
+
+  if (publicParts[0] === 'api' && publicParts[1] === 'public' && publicParts[2] === 'users' && publicParts[3] && publicParts[4] === 'profile' && req.method === 'GET') {
+    const viewer = await optionalAuth(req);
+    const userId = oid(publicParts[3]);
+    if (!userId) throw err('User ID noto‘g‘ri');
+    const userDoc = await users.findOne({ _id: userId });
+    if (!userDoc) throw err('Foydalanuvchi topilmadi', 404);
+    if (approvalStatus(userDoc.approvalStatus) !== 'approved') throw err('Profil topilmadi', 404);
+    const payload = await buildUserProfile(viewer, userId);
+    if (String(viewer?._id || '') !== String(userId)) {
+      payload.finance = null;
+    }
+    return json(res, 200, payload);
   }
 
   if ((req.method === 'POST' || req.method === 'PUT') && (url.pathname === '/api/upload' || url.pathname === '/api/upload/')) {
@@ -1340,7 +1987,7 @@ async function api(req, res, url) {
     }
 
     if (req.method === 'GET' && url.pathname === '/api/admin/overview') {
-      const [u, d, g, m, c, t, a, at, an, sc, mt, planCount, paymentCount, salaryCount, expenseCount] = await Promise.all([
+      const [u, d, g, m, c, t, a, at, an, sc, mt, planCount, paymentCount, salaryCount, expenseCount, videoCount, liveCount, joinRequestCount] = await Promise.all([
         users.countDocuments(),
         chats.countDocuments({ type: 'direct' }),
         chats.countDocuments({ type: 'group' }),
@@ -1356,6 +2003,9 @@ async function api(req, res, url) {
         studentPayments.countDocuments(),
         teacherPayrolls.countDocuments(),
         financeExpenses.countDocuments(),
+        videoLessons.countDocuments(),
+        liveSessions.countDocuments({ active: true }),
+        groupJoinRequests.countDocuments({ status: 'pending' }),
       ]);
       return json(res, 200, {
         counts: {
@@ -1374,6 +2024,9 @@ async function api(req, res, url) {
           studentPayments: paymentCount,
           teacherPayrolls: salaryCount,
           financeExpenses: expenseCount,
+          videoLessons: videoCount,
+          activeLives: liveCount,
+          pendingJoinRequests: joinRequestCount,
         },
       });
     }
@@ -1381,12 +2034,18 @@ async function api(req, res, url) {
     if (req.method === 'GET' && url.pathname === '/api/admin/users') {
       const q = clean(url.searchParams.get('q'), 50);
       const role = clean(url.searchParams.get('role'), 24);
+      const requestedApprovalStatus = clean(url.searchParams.get('approvalStatus'), 24).toLowerCase();
       const rx = q ? new RegExp(safeRegex(q), 'i') : null;
+      const andList = [];
+      if (role && role !== 'all') andList.push({ role });
+      if (requestedApprovalStatus && requestedApprovalStatus !== 'all') {
+        andList.push(approvalQuery(requestedApprovalStatus));
+      }
+      if (rx) {
+        andList.push({ $or: [{ fullName: rx }, { username: rx }, { phone: rx }, { bio: rx }] });
+      }
       const list = await users
-        .find({
-          ...(role && role !== 'all' ? { role } : {}),
-          ...(rx ? { $or: [{ fullName: rx }, { username: rx }, { phone: rx }, { bio: rx }] } : {}),
-        })
+        .find(andList.length ? { $and: andList } : {})
         .sort({ createdAt: -1 })
         .limit(120)
         .toArray();
@@ -1415,6 +2074,9 @@ async function api(req, res, url) {
         ]);
         if (!groupDoc) throw err('Guruh topilmadi');
         if (!teacherDoc || !isRole(teacherDoc, 'teacher')) throw err('O‘qituvchi noto‘g‘ri');
+        if (String(groupDoc.teacherId || '') !== String(teacherId)) {
+          throw err('Abituriyent guruhning biriktirilgan o‘qituvchisiga ulanishi kerak');
+        }
       }
       const exists = await users.findOne({ $or: [{ username: user }, ...(tel ? [{ phone: tel }] : [])] });
       if (exists) throw err('Username yoki telefon band', 409);
@@ -1426,9 +2088,13 @@ async function api(req, res, url) {
         bio: clean(b.bio, 160),
         avatar: clean(b.avatar, 500),
         role,
+        approvalStatus: 'approved',
         mentorTeacherId: role === 'abituriyent' ? teacherId : null,
         studyGroupIds: role === 'abituriyent' ? [groupId] : [],
         createdAt: new Date(),
+        updatedAt: new Date(),
+        approvedAt: new Date(),
+        rejectedAt: null,
       };
       const ins = await users.insertOne(doc);
       if (role === 'abituriyent') {
@@ -1443,7 +2109,7 @@ async function api(req, res, url) {
       const rx = q ? new RegExp(safeRegex(q), 'i') : null;
       const query = {
         ...(type && type !== 'all' ? { type } : {}),
-        ...(rx ? { $or: [{ name: rx }, { description: rx }] } : {}),
+        ...(rx ? { $or: [{ name: rx }, { description: rx }, { subject: rx }, { username: rx }] } : {}),
       };
       const list = await chats.find(query).sort({ updatedAt: -1 }).limit(80).toArray();
       return json(res, 200, { chats: await hydrateChats(list, null) });
@@ -1454,10 +2120,17 @@ async function api(req, res, url) {
       const name = clean(b.name, 50);
       const description = clean(b.description, 160);
       const subject = clean(b.subject, 80);
+      const coursePrice = optionalAmount(b.coursePrice, 'Kurs narxi', 0);
+      const groupUsername = username(b.username || b.handle || b.slug || name);
       const teacherId = oid(b.teacherId);
       if (name.length < 3) throw err('Guruh nomi qisqa');
       if (subject.length < 2) throw err('Fan nomini kiriting');
+      if (groupUsername && groupUsername.length < 3) throw err('Guruh username kamida 3 ta belgidan iborat bo‘lsin');
       if (!teacherId) throw err('O‘qituvchi tanlanmagan');
+      if (groupUsername) {
+        const duplicate = await chats.findOne({ type: 'group', username: groupUsername });
+        if (duplicate) throw err('Guruh username band', 409);
+      }
       const teacherDoc = await users.findOne({ _id: teacherId });
       if (!teacherDoc || !isRole(teacherDoc, 'teacher')) throw err('Faqat o‘qituvchi biriktiriladi');
       const studentIds = uniqIds(b.studentIds || []);
@@ -1472,6 +2145,8 @@ async function api(req, res, url) {
         name,
         description,
         subject,
+        coursePrice,
+        username: groupUsername,
         avatar: clean(b.avatar, 500),
         members: memberIds,
         teacherId,
@@ -1763,6 +2438,8 @@ async function api(req, res, url) {
       const userId = oid(parts[3]);
       if (!userId) throw err('User ID noto‘g‘ri');
       const b = await body(req);
+      const currentUser = await users.findOne({ _id: userId });
+      if (!currentUser) throw err('User topilmadi', 404);
       const patch = {
         ...(b.fullName !== undefined ? { fullName: clean(b.fullName, 40) } : {}),
         ...(b.username !== undefined ? { username: username(b.username) } : {}),
@@ -1770,10 +2447,78 @@ async function api(req, res, url) {
         ...(b.bio !== undefined ? { bio: clean(b.bio, 160) } : {}),
         ...(b.avatar !== undefined ? { avatar: clean(b.avatar, 500) } : {}),
         ...(b.role !== undefined ? { role: clean(b.role, 20).toLowerCase() || 'abituriyent' } : {}),
+        ...(b.approvalStatus !== undefined ? { approvalStatus: approvalStatus(b.approvalStatus) } : {}),
       };
-      if (!Object.keys(patch).length) throw err('Yangilash uchun maydon yo‘q');
       if (patch.role && !['admin', 'teacher', 'abituriyent'].includes(patch.role)) throw err('Role noto‘g‘ri');
+      if (patch.approvalStatus && !['approved', 'pending', 'rejected'].includes(patch.approvalStatus)) throw err('Approval status noto‘g‘ri');
+      if (patch.approvalStatus === 'approved') {
+        patch.approvedAt = new Date();
+        patch.rejectedAt = null;
+      }
+      if (patch.approvalStatus === 'rejected') {
+        patch.rejectedAt = new Date();
+      }
+
+      const roleAfter = patch.role || currentUser.role || 'abituriyent';
+      const now = new Date();
+      const prevGroupIds = uniqIds(currentUser.studyGroupIds || []);
+      let nextGroupIds = [...prevGroupIds];
+
+      const teacherIdInputProvided = b.teacherId !== undefined;
+      const primaryGroupProvided = b.groupId !== undefined;
+      const addGroupProvided = b.addGroupId !== undefined;
+      const removeGroupProvided = b.removeGroupId !== undefined;
+
+      const teacherId = teacherIdInputProvided ? oid(b.teacherId) : null;
+      const primaryGroupId = primaryGroupProvided ? oid(b.groupId) : null;
+      const addGroupId = addGroupProvided ? oid(b.addGroupId) : null;
+      const removeGroupId = removeGroupProvided ? oid(b.removeGroupId) : null;
+
+      if (roleAfter === 'abituriyent') {
+        if (teacherIdInputProvided) {
+          if (!teacherId) throw err('O‘qituvchi ID noto‘g‘ri');
+          const teacherDoc = await users.findOne({ _id: teacherId });
+          if (!teacherDoc || !isRole(teacherDoc, 'teacher')) throw err('O‘qituvchi noto‘g‘ri');
+          patch.mentorTeacherId = teacherId;
+        }
+        if (primaryGroupProvided) {
+          if (!primaryGroupId) throw err('Guruh ID noto‘g‘ri');
+          const groupDoc = await chats.findOne({ _id: primaryGroupId, type: 'group' });
+          if (!groupDoc) throw err('Guruh topilmadi');
+          nextGroupIds = [primaryGroupId];
+          if (!teacherIdInputProvided && groupDoc.teacherId) patch.mentorTeacherId = groupDoc.teacherId;
+        }
+        if (addGroupProvided) {
+          if (!addGroupId) throw err('Qo‘shiladigan guruh ID noto‘g‘ri');
+          const groupDoc = await chats.findOne({ _id: addGroupId, type: 'group' });
+          if (!groupDoc) throw err('Guruh topilmadi');
+          if (!nextGroupIds.some((id) => String(id) === String(addGroupId))) nextGroupIds.push(addGroupId);
+        }
+        if (removeGroupProvided) {
+          if (!removeGroupId) throw err('O‘chiriladigan guruh ID noto‘g‘ri');
+          nextGroupIds = nextGroupIds.filter((id) => String(id) !== String(removeGroupId));
+        }
+        if (primaryGroupProvided || addGroupProvided || removeGroupProvided) {
+          patch.studyGroupIds = nextGroupIds;
+        }
+      } else if (patch.role && patch.role !== 'abituriyent') {
+        patch.mentorTeacherId = null;
+        patch.studyGroupIds = [];
+        nextGroupIds = [];
+      }
+
+      if (!Object.keys(patch).length) throw err('Yangilash uchun maydon yo‘q');
       await users.updateOne({ _id: userId }, { $set: patch });
+
+      const addedGroups = nextGroupIds.filter((id) => !prevGroupIds.some((prevId) => String(prevId) === String(id)));
+      const removedGroups = prevGroupIds.filter((id) => !nextGroupIds.some((nextId) => String(nextId) === String(id)));
+      if (addedGroups.length) {
+        await chats.updateMany({ _id: { $in: addedGroups }, type: 'group' }, { $addToSet: { members: userId }, $set: { updatedAt: now } });
+      }
+      if (removedGroups.length) {
+        await chats.updateMany({ _id: { $in: removedGroups }, type: 'group' }, { $pull: { members: userId }, $set: { updatedAt: now } });
+      }
+
       const fresh = await users.findOne({ _id: userId });
       return json(res, 200, { user: pubUser(fresh) });
     }
@@ -1789,12 +2534,25 @@ async function api(req, res, url) {
       const chatId = oid(parts[3]);
       if (!chatId) throw err('Chat ID noto‘g‘ri');
       const b = await body(req);
+      const chatDoc = await chats.findOne({ _id: chatId });
+      if (!chatDoc) throw err('Chat topilmadi', 404);
+      const nextUsername = b.username !== undefined ? username(b.username) : null;
+      if (b.username !== undefined) {
+        if (nextUsername && nextUsername.length < 3) throw err('Guruh username kamida 3 ta belgidan iborat bo‘lsin');
+        if (nextUsername) {
+          const duplicate = await chats.findOne({ _id: { $ne: chatId }, type: 'group', username: nextUsername });
+          if (duplicate) throw err('Guruh username band', 409);
+        }
+      }
       await chats.updateOne(
         { _id: chatId },
         {
           $set: {
             ...(b.name !== undefined ? { name: clean(b.name, 50) } : {}),
             ...(b.description !== undefined ? { description: clean(b.description, 160) } : {}),
+            ...(b.subject !== undefined ? { subject: clean(b.subject, 80) } : {}),
+            ...(b.coursePrice !== undefined ? { coursePrice: optionalAmount(b.coursePrice, 'Kurs narxi', 0) } : {}),
+            ...(b.username !== undefined ? { username: nextUsername } : {}),
             ...(b.avatar !== undefined ? { avatar: clean(b.avatar, 500) } : {}),
             updatedAt: new Date(),
           },
@@ -1853,6 +2611,145 @@ async function api(req, res, url) {
         limit: url.searchParams.get('limit'),
       });
       return json(res, 200, { attendance: docs });
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/admin/group-join-requests') {
+      const status = clean(url.searchParams.get('status'), 20).toLowerCase();
+      const q = clean(url.searchParams.get('q'), 80);
+      const rx = q ? new RegExp(safeRegex(q), 'i') : null;
+      const query = {
+        ...(status && status !== 'all' ? { status } : {}),
+      };
+      const list = await groupJoinRequests.find(query).sort({ createdAt: -1 }).limit(400).toArray();
+      const userIds = uniqIds(list.map((item) => item.userId));
+      const teacherIds = uniqIds(list.map((item) => item.teacherId));
+      const groupIds = uniqIds(list.map((item) => item.groupId));
+      const adminIds = uniqIds(list.map((item) => item.processedBy));
+      const [userDocs, teacherDocs, groupDocs, adminDocs] = await Promise.all([
+        userIds.length ? users.find({ _id: { $in: userIds } }).toArray() : [],
+        teacherIds.length ? users.find({ _id: { $in: teacherIds } }).toArray() : [],
+        groupIds.length ? chats.find({ _id: { $in: groupIds } }).toArray() : [],
+        adminIds.length ? users.find({ _id: { $in: adminIds } }).toArray() : [],
+      ]);
+      const userMap = new Map(userDocs.map((item) => [String(item._id), item]));
+      const teacherMap = new Map(teacherDocs.map((item) => [String(item._id), item]));
+      const groupMap = new Map(groupDocs.map((item) => [String(item._id), item]));
+      const adminMap = new Map(adminDocs.map((item) => [String(item._id), item]));
+      const requests = list
+        .map((item) => {
+          const userDoc = userMap.get(String(item.userId || ''));
+          const teacherDoc = teacherMap.get(String(item.teacherId || ''));
+          const groupDoc = groupMap.get(String(item.groupId || ''));
+          const adminDoc = adminMap.get(String(item.processedBy || ''));
+          return {
+            id: String(item._id),
+            status: item.status || 'pending',
+            fullName: item.fullName || userDoc?.fullName || '',
+            phone: item.phone || userDoc?.phone || '',
+            paymentConsent: !!item.paymentConsent,
+            paymentAmount: roundAmount(item.paymentAmount || 0),
+            paymentScreenshotUrl: item.paymentScreenshotUrl || '',
+            adminShareAmount: roundAmount(item.adminShareAmount || 0),
+            adminCommissionPercent: Number(item.adminCommissionPercent || ADMIN_COMMISSION_PERCENT),
+            note: item.note || '',
+            adminNote: item.adminNote || '',
+            createdAt: item.createdAt,
+            processedAt: item.processedAt || null,
+            user: pubUser(userDoc),
+            teacher: pubUser(teacherDoc),
+            group: groupDoc
+              ? {
+                  id: String(groupDoc._id),
+                  name: groupDoc.name || 'Guruh',
+                  subject: groupDoc.subject || '',
+                  coursePrice: roundAmount(groupDoc.coursePrice || 0),
+                }
+              : null,
+            processedBy: pubUser(adminDoc),
+            processedByLogin: item.processedByLogin || '',
+          };
+        })
+        .filter((item) => {
+          if (!rx) return true;
+          return (
+            rx.test(item.fullName || '') ||
+            rx.test(item.phone || '') ||
+            rx.test(item.note || '') ||
+            rx.test(item.group?.name || '') ||
+            rx.test(item.teacher?.fullName || '') ||
+            rx.test(item.user?.fullName || '') ||
+            rx.test(item.user?.username || '')
+          );
+        });
+      return json(res, 200, { requests });
+    }
+
+    if (parts[0] === 'api' && parts[1] === 'admin' && parts[2] === 'group-join-requests' && parts[3] && req.method === 'PATCH') {
+      const requestId = oid(parts[3]);
+      if (!requestId) throw err('So‘rov ID noto‘g‘ri');
+      const existing = await groupJoinRequests.findOne({ _id: requestId });
+      if (!existing) throw err('So‘rov topilmadi', 404);
+      const b = await body(req);
+      const action = clean(b.action, 20).toLowerCase();
+      if (!['approve', 'reject'].includes(action)) throw err('action: approve yoki reject bo‘lsin');
+      if (existing.status === 'approved' && action === 'approve') throw err('So‘rov avval tasdiqlangan');
+      if (existing.status === 'rejected' && action === 'reject') throw err('So‘rov avval rad etilgan');
+
+      const nextGroupId = oid(b.groupId) || existing.groupId || null;
+      const nextTeacherId = oid(b.teacherId) || existing.teacherId || null;
+      const now = new Date();
+      let teacherIdForUpdate = nextTeacherId;
+
+      if (action === 'approve') {
+        const userId = oid(existing.userId);
+        if (!userId) throw err('So‘rov foydalanuvchisi topilmadi');
+        if (!nextGroupId) throw err('Tasdiqlash uchun guruh tanlang');
+        const [userDoc, groupDoc] = await Promise.all([
+          users.findOne({ _id: userId }),
+          chats.findOne({ _id: nextGroupId, type: 'group' }),
+        ]);
+        if (!userDoc) throw err('Foydalanuvchi topilmadi', 404);
+        if (!isRole(userDoc, 'abituriyent')) throw err('Faqat abituriyent so‘rovi tasdiqlanadi');
+        if (!groupDoc) throw err('Guruh topilmadi', 404);
+        const teacherIdToAssign = nextTeacherId || groupDoc.teacherId || null;
+        if (!teacherIdToAssign) throw err('Guruh uchun o‘qituvchi biriktirilmagan');
+        const teacherDoc = await users.findOne({ _id: teacherIdToAssign });
+        if (!teacherDoc || !isRole(teacherDoc, 'teacher')) throw err('O‘qituvchi noto‘g‘ri');
+        teacherIdForUpdate = teacherDoc._id;
+
+        await chats.updateOne(
+          { _id: groupDoc._id },
+          {
+            $addToSet: { members: userDoc._id },
+            $set: { updatedAt: now },
+          }
+        );
+        await users.updateOne(
+          { _id: userDoc._id },
+          {
+            $addToSet: { studyGroupIds: groupDoc._id },
+            $set: { mentorTeacherId: teacherDoc._id },
+          }
+        );
+      }
+
+      await groupJoinRequests.updateOne(
+        { _id: requestId },
+        {
+          $set: {
+            status: action === 'approve' ? 'approved' : 'rejected',
+            groupId: nextGroupId,
+            teacherId: teacherIdForUpdate,
+            adminNote: clean(b.adminNote, 220),
+            processedAt: now,
+            processedBy: existing.processedBy || null,
+            processedByLogin: ADMIN_LOGIN,
+            updatedAt: now,
+          },
+        }
+      );
+
+      return json(res, 200, { ok: true });
     }
 
     throw err('Admin route topilmadi', 404);
@@ -2038,11 +2935,503 @@ async function api(req, res, url) {
   if (req.method === 'GET' && url.pathname === '/api/search') {
     const q = clean(url.searchParams.get('q'), 40);
     const rx = q ? new RegExp(safeRegex(q), 'i') : null;
-    const [userDocs, groupDocs] = await Promise.all([
+    const [userDocs, groupDocs, videoDocs, liveDocs] = await Promise.all([
       users.find({ _id: { $ne: me._id }, ...(rx ? { $or: [{ fullName: rx }, { username: rx }, { phone: rx }] } : {}) }).sort({ createdAt: -1 }).limit(12).toArray(),
-      chats.find({ type: 'group', members: me._id, ...(rx ? { $or: [{ name: rx }, { description: rx }] } : {}) }).sort({ updatedAt: -1 }).limit(12).toArray(),
+      chats.find({ type: 'group', ...(rx ? { $or: [{ name: rx }, { description: rx }, { subject: rx }, { username: rx }] } : {}) }).sort({ updatedAt: -1 }).limit(20).toArray(),
+      videoLessons.find(rx ? { $or: [{ title: rx }, { description: rx }, { tags: rx }] } : {}).sort({ createdAt: -1 }).limit(20).toArray(),
+      liveSessions.find({ active: true, ...(rx ? { $or: [{ title: rx }, { description: rx }] } : {}) }).sort({ startedAt: -1 }).limit(20).toArray(),
     ]);
-    return json(res, 200, { users: userDocs.map(pubUser), groups: await hydrateChats(groupDocs, me._id) });
+    const hydratedGroups = await hydrateChats(groupDocs, me._id);
+    const hydratedVideos = await hydrateVideoLessons(videoDocs, me._id);
+    const hydratedLives = await hydrateLiveSessions(liveDocs, me._id);
+    return json(res, 200, {
+      users: userDocs.map(pubUser),
+      groups: hydratedGroups.map((group) => ({
+        ...group,
+        isMember: (group.members || []).some((member) => String(member.id) === String(me._id)),
+      })),
+      videos: hydratedVideos,
+      liveSessions: hydratedLives,
+    });
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/teachers') {
+    const q = clean(url.searchParams.get('q'), 60);
+    const rx = q ? new RegExp(safeRegex(q), 'i') : null;
+    const teacherDocs = await users
+      .find({
+        $and: [
+          { role: 'teacher' },
+          approvalQuery('approved'),
+          ...(rx ? [{ $or: [{ fullName: rx }, { username: rx }, { bio: rx }, { phone: rx }] }] : []),
+        ],
+      })
+      .sort({ createdAt: -1 })
+      .limit(120)
+      .toArray();
+    const teacherIds = teacherDocs.map((item) => item._id);
+    const [groupsByTeacher, followSnapshot] = await Promise.all([
+      teacherIds.length ? chats.find({ type: 'group', teacherId: { $in: teacherIds } }).toArray() : [],
+      teacherFollowSnapshot(teacherIds, me._id),
+    ]);
+    const groupsMap = new Map();
+    for (const group of groupsByTeacher) {
+      const key = String(group.teacherId || '');
+      const list = groupsMap.get(key) || [];
+      list.push(group);
+      groupsMap.set(key, list);
+    }
+    const teachers = teacherDocs.map((teacher) => {
+      const teacherKey = String(teacher._id);
+      const courses = (groupsMap.get(teacherKey) || []).map((group) => group.subject || group.name || '').filter(Boolean).slice(0, 6);
+      return {
+        ...pubUser(teacher),
+        followerCount: followSnapshot.counts.get(teacherKey) || 0,
+        isFollowing: followSnapshot.following.has(teacherKey),
+        groupCount: (groupsMap.get(teacherKey) || []).length,
+        courses,
+      };
+    });
+    return json(res, 200, { teachers });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'teachers' && parts[2] && parts[3] === 'follow' && req.method === 'POST') {
+    const teacherId = oid(parts[2]);
+    if (!teacherId) throw err('O‘qituvchi ID noto‘g‘ri');
+    if (String(teacherId) === String(me._id)) throw err('O‘zingizga obuna bo‘lolmaysiz');
+    const teacherDoc = await users.findOne({ _id: teacherId });
+    if (!teacherDoc || !isRole(teacherDoc, 'teacher')) throw err('O‘qituvchi topilmadi', 404);
+    const now = new Date();
+    await teacherFollowers.updateOne(
+      { teacherId, followerId: me._id },
+      { $setOnInsert: { teacherId, followerId: me._id, createdAt: now } },
+      { upsert: true }
+    );
+    const followerCount = await teacherFollowers.countDocuments({ teacherId });
+    return json(res, 200, { ok: true, followerCount, isFollowing: true });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'teachers' && parts[2] && parts[3] === 'follow' && req.method === 'DELETE') {
+    const teacherId = oid(parts[2]);
+    if (!teacherId) throw err('O‘qituvchi ID noto‘g‘ri');
+    await teacherFollowers.deleteOne({ teacherId, followerId: me._id });
+    const followerCount = await teacherFollowers.countDocuments({ teacherId });
+    return json(res, 200, { ok: true, followerCount, isFollowing: false });
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/group-join-requests/my') {
+    const list = await groupJoinRequests.find({ userId: me._id }).sort({ createdAt: -1 }).limit(200).toArray();
+    const groupIds = uniqIds(list.map((item) => item.groupId));
+    const teacherIds = uniqIds(list.map((item) => item.teacherId));
+    const [groupDocs, teacherDocs] = await Promise.all([
+      groupIds.length ? chats.find({ _id: { $in: groupIds } }).toArray() : [],
+      teacherIds.length ? users.find({ _id: { $in: teacherIds } }).toArray() : [],
+    ]);
+    const groupMap = new Map(groupDocs.map((item) => [String(item._id), item]));
+    const teacherMap = new Map(teacherDocs.map((item) => [String(item._id), item]));
+    return json(res, 200, {
+      requests: list.map((item) => {
+        const groupDoc = groupMap.get(String(item.groupId || ''));
+        const teacherDoc = teacherMap.get(String(item.teacherId || ''));
+        return {
+          id: String(item._id),
+          status: item.status || 'pending',
+          fullName: item.fullName || me.fullName || '',
+          phone: item.phone || me.phone || '',
+          paymentConsent: !!item.paymentConsent,
+          paymentAmount: roundAmount(item.paymentAmount || 0),
+          paymentScreenshotUrl: item.paymentScreenshotUrl || '',
+          adminShareAmount: roundAmount(item.adminShareAmount || 0),
+          adminCommissionPercent: Number(item.adminCommissionPercent || ADMIN_COMMISSION_PERCENT),
+          note: item.note || '',
+          adminNote: item.adminNote || '',
+          createdAt: item.createdAt,
+          processedAt: item.processedAt || null,
+          group: groupDoc
+            ? {
+                id: String(groupDoc._id),
+                name: groupDoc.name || 'Guruh',
+                subject: groupDoc.subject || '',
+                coursePrice: roundAmount(groupDoc.coursePrice || 0),
+              }
+            : null,
+          teacher: pubUser(teacherDoc),
+          processedByLogin: item.processedByLogin || '',
+        };
+      }),
+    });
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/group-join-requests') {
+    if (!isRole(me, 'abituriyent')) throw err('So‘rovni faqat abituriyent yuboradi', 403);
+    const b = await body(req);
+    const groupId = oid(b.groupId);
+    if (!groupId) throw err('Guruh tanlanmagan');
+    const group = await chats.findOne({ _id: groupId, type: 'group' });
+    if (!group) throw err('Guruh topilmadi');
+    if ((group.members || []).some((member) => String(member) === String(me._id))) {
+      throw err('Siz bu guruhga allaqachon birikgansiz');
+    }
+    const fullName = clean(b.fullName, 70) || me.fullName || '';
+    const userPhone = phone(b.phone) || me.phone || '';
+    if (fullName.length < 3) throw err('Ism-familya to‘liq kiriting');
+    if (userPhone.length < 7) throw err('Telefon raqami kerak');
+    if (!b.paymentConsent) throw err('Oylik to‘lov roziligini belgilang');
+    const paymentAmount = optionalAmount(b.paymentAmount, 'To‘lov summasi', 0);
+    const coursePrice = roundAmount(group.coursePrice || 0);
+    if (coursePrice > 0 && paymentAmount < coursePrice) throw err(`Kurs summasi kamida ${coursePrice} so‘m bo‘lishi kerak`);
+    const paymentScreenshotUrl = clean(b.paymentScreenshotUrl, 500);
+    if (!paymentScreenshotUrl) throw err('To‘lov skrinshotini yuklang');
+    const duplicate = await groupJoinRequests.findOne({
+      userId: me._id,
+      groupId,
+      status: 'pending',
+    });
+    if (duplicate) throw err('Bu guruh bo‘yicha so‘rov allaqachon yuborilgan');
+    const now = new Date();
+    const doc = {
+      userId: me._id,
+      groupId,
+      teacherId: group.teacherId || null,
+      fullName,
+      phone: userPhone,
+      note: clean(b.note, 220),
+      paymentConsent: true,
+      paymentAmount,
+      paymentScreenshotUrl,
+      coursePriceAtRequest: coursePrice,
+      adminCommissionPercent: ADMIN_COMMISSION_PERCENT,
+      adminShareAmount: roundAmount((paymentAmount * ADMIN_COMMISSION_PERCENT) / 100),
+      status: 'pending',
+      createdAt: now,
+      updatedAt: now,
+      processedAt: null,
+      processedBy: null,
+      processedByLogin: '',
+      adminNote: '',
+    };
+    const ins = await groupJoinRequests.insertOne(doc);
+    return json(res, 201, {
+      request: {
+        id: String(ins.insertedId),
+        status: doc.status,
+        createdAt: doc.createdAt,
+        fullName: doc.fullName,
+        phone: doc.phone,
+        note: doc.note,
+        paymentConsent: doc.paymentConsent,
+        paymentAmount: doc.paymentAmount,
+        paymentScreenshotUrl: doc.paymentScreenshotUrl,
+      },
+    });
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/videos') {
+    const q = clean(url.searchParams.get('q'), 80);
+    const rx = q ? new RegExp(safeRegex(q), 'i') : null;
+    const teacherId = oid(url.searchParams.get('teacherId'));
+    const sortBy = clean(url.searchParams.get('sort'), 24).toLowerCase() || 'trending';
+    const list = await videoLessons
+      .find({
+        ...(teacherId ? { teacherId } : {}),
+        ...(rx ? { $or: [{ title: rx }, { description: rx }, { tags: rx }] } : {}),
+      })
+      .sort({ createdAt: -1 })
+      .limit(220)
+      .toArray();
+    let videos = await hydrateVideoLessons(list, me._id);
+    if (sortBy === 'new' || sortBy === 'newest') {
+      videos = videos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    } else if (sortBy === 'likes' || sortBy === 'top') {
+      videos = videos.sort((a, b) => (b.likesCount - a.likesCount) || (b.commentsCount - a.commentsCount));
+    } else {
+      videos = videos.sort((a, b) => (b.score - a.score) || (new Date(b.createdAt) - new Date(a.createdAt)));
+    }
+    return json(res, 200, { videos });
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/videos') {
+    ensureRole(me, 'teacher', 'admin');
+    const b = await body(req);
+    const title = clean(b.title, 120);
+    const description = clean(b.description, 2200);
+    const link = clean(b.link, 600);
+    if (title.length < 3) throw err('Video nomi qisqa');
+    if (description.length < 3) throw err('Video tavsifi kiriting');
+    const teacherId = isRole(me, 'admin') ? oid(b.teacherId) || me._id : me._id;
+    const teacherDoc = await users.findOne({ _id: teacherId });
+    if (!teacherDoc || !isRole(teacherDoc, 'teacher', 'admin')) throw err('Video uchun o‘qituvchi topilmadi');
+    const yt = youtubeMeta(link);
+    const now = new Date();
+    const doc = {
+      teacherId,
+      title,
+      description,
+      link,
+      youtubeId: yt.youtubeId || '',
+      youtubeEmbedUrl: yt.youtubeEmbedUrl || '',
+      youtubeWatchUrl: yt.youtubeWatchUrl || '',
+      youtubeThumbnail: yt.youtubeThumbnail || '',
+      hasYoutubeVideo: !!yt.youtubeId,
+      tags: asList(b.tags || [], 12, 30),
+      createdAt: now,
+      updatedAt: now,
+    };
+    const ins = await videoLessons.insertOne(doc);
+    const fresh = await videoLessons.findOne({ _id: ins.insertedId });
+    const hydrated = await hydrateVideoLessons([fresh], me._id);
+    return json(res, 201, { video: hydrated[0] || null });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'videos' && parts[2] && parts.length === 3 && req.method === 'GET') {
+    const videoId = oid(parts[2]);
+    if (!videoId) throw err('Video ID noto‘g‘ri');
+    const videoDoc = await videoLessons.findOne({ _id: videoId });
+    if (!videoDoc) throw err('Video topilmadi', 404);
+    const [videoHydrated, commentDocs] = await Promise.all([
+      hydrateVideoLessons([videoDoc], me._id),
+      videoLessonComments.find({ videoId }).sort({ createdAt: -1 }).limit(300).toArray(),
+    ]);
+    const comments = await hydrateVideoComments(commentDocs);
+    return json(res, 200, { video: videoHydrated[0] || null, comments });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'videos' && parts[2] && parts.length === 3 && req.method === 'PATCH') {
+    const videoId = oid(parts[2]);
+    if (!videoId) throw err('Video ID noto‘g‘ri');
+    const videoDoc = await videoLessons.findOne({ _id: videoId });
+    if (!videoDoc) throw err('Video topilmadi', 404);
+    if (!isRole(me, 'admin') && String(videoDoc.teacherId || '') !== String(me._id)) throw err('Faqat video egasi tahrirlaydi', 403);
+    const b = await body(req);
+    const link = b.link !== undefined ? clean(b.link, 600) : videoDoc.link || '';
+    const yt = youtubeMeta(link);
+    const patch = {
+      ...(b.title !== undefined ? { title: clean(b.title, 120) } : {}),
+      ...(b.description !== undefined ? { description: clean(b.description, 2200) } : {}),
+      ...(b.tags !== undefined ? { tags: asList(b.tags || [], 12, 30) } : {}),
+      ...(b.link !== undefined
+        ? {
+            link,
+            youtubeId: yt.youtubeId || '',
+            youtubeEmbedUrl: yt.youtubeEmbedUrl || '',
+            youtubeWatchUrl: yt.youtubeWatchUrl || '',
+            youtubeThumbnail: yt.youtubeThumbnail || '',
+            hasYoutubeVideo: !!yt.youtubeId,
+          }
+        : {}),
+      updatedAt: new Date(),
+    };
+    if (patch.title !== undefined && patch.title.length < 3) throw err('Video nomi qisqa');
+    if (patch.description !== undefined && patch.description.length < 3) throw err('Video tavsifi kiriting');
+    await videoLessons.updateOne({ _id: videoId }, { $set: patch });
+    const fresh = await videoLessons.findOne({ _id: videoId });
+    return json(res, 200, { video: (await hydrateVideoLessons([fresh], me._id))[0] || null });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'videos' && parts[2] && parts.length === 3 && req.method === 'DELETE') {
+    const videoId = oid(parts[2]);
+    if (!videoId) throw err('Video ID noto‘g‘ri');
+    const videoDoc = await videoLessons.findOne({ _id: videoId });
+    if (!videoDoc) throw err('Video topilmadi', 404);
+    if (!isRole(me, 'admin') && String(videoDoc.teacherId || '') !== String(me._id)) throw err('Faqat video egasi o‘chiradi', 403);
+    await videoLessonLikes.deleteMany({ videoId });
+    await videoLessonComments.deleteMany({ videoId });
+    await videoLessons.deleteOne({ _id: videoId });
+    return json(res, 200, { ok: true });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'videos' && parts[2] && parts[3] === 'like' && req.method === 'POST') {
+    const videoId = oid(parts[2]);
+    if (!videoId) throw err('Video ID noto‘g‘ri');
+    const videoDoc = await videoLessons.findOne({ _id: videoId });
+    if (!videoDoc) throw err('Video topilmadi', 404);
+    const existing = await videoLessonLikes.findOne({ videoId, userId: me._id });
+    if (existing) await videoLessonLikes.deleteOne({ _id: existing._id });
+    else await videoLessonLikes.insertOne({ videoId, userId: me._id, createdAt: new Date() });
+    const likesCount = await videoLessonLikes.countDocuments({ videoId });
+    return json(res, 200, { ok: true, isLiked: !existing, likesCount });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'videos' && parts[2] && parts[3] === 'comments' && req.method === 'POST') {
+    const videoId = oid(parts[2]);
+    if (!videoId) throw err('Video ID noto‘g‘ri');
+    const videoDoc = await videoLessons.findOne({ _id: videoId });
+    if (!videoDoc) throw err('Video topilmadi', 404);
+    const b = await body(req);
+    const textValue = clean(b.text, 1200);
+    if (textValue.length < 1) throw err('Izoh matni bo‘sh');
+    const doc = { videoId, userId: me._id, text: textValue, createdAt: new Date() };
+    const ins = await videoLessonComments.insertOne(doc);
+    const fresh = await videoLessonComments.findOne({ _id: ins.insertedId });
+    const comments = await hydrateVideoComments([fresh]);
+    const commentsCount = await videoLessonComments.countDocuments({ videoId });
+    return json(res, 201, { comment: comments[0] || null, commentsCount });
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/live/active') {
+    const docs = await liveSessions.find({ active: true }).sort({ startedAt: -1, createdAt: -1 }).limit(80).toArray();
+    return json(res, 200, { sessions: await hydrateLiveSessions(docs, me._id) });
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/live/start') {
+    ensureRole(me, 'teacher', 'admin');
+    const b = await body(req);
+    const now = new Date();
+    const existing = await liveSessions.findOne({ teacherId: me._id, active: true });
+    if (existing) {
+      await liveSessions.updateOne(
+        { _id: existing._id },
+        {
+          $set: {
+            title: clean(b.title, 120) || existing.title || 'Jonli efir',
+            description: clean(b.description, 500) || existing.description || '',
+            thumbnail: clean(b.thumbnail, 500) || existing.thumbnail || '',
+            updatedAt: now,
+          },
+          $addToSet: { participants: me._id },
+        }
+      );
+      const fresh = await liveSessions.findOne({ _id: existing._id });
+      return json(res, 200, { session: (await hydrateLiveSessions([fresh], me._id))[0] || null });
+    }
+    const doc = {
+      teacherId: me._id,
+      title: clean(b.title, 120) || `${me.fullName || me.username || 'Ustoz'} jonli efiri`,
+      description: clean(b.description, 500),
+      thumbnail: clean(b.thumbnail, 500),
+      active: true,
+      participants: [me._id],
+      startedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    };
+    const ins = await liveSessions.insertOne(doc);
+    const fresh = await liveSessions.findOne({ _id: ins.insertedId });
+    return json(res, 201, { session: (await hydrateLiveSessions([fresh], me._id))[0] || null });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'live' && parts[2] && parts.length === 3 && req.method === 'GET') {
+    const sessionId = oid(parts[2]);
+    if (!sessionId) throw err('Jonli efir ID noto‘g‘ri');
+    const doc = await liveSessions.findOne({ _id: sessionId, active: true });
+    if (!doc) throw err('Jonli efir topilmadi', 404);
+    const [session] = await hydrateLiveSessions([doc], me._id);
+    const commentDocs = await liveSessionComments.find({ sessionId }).sort({ createdAt: -1 }).limit(200).toArray();
+    return json(res, 200, { session: session || null, comments: await hydrateLiveComments(commentDocs) });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'live' && parts[2] && parts[3] === 'join' && req.method === 'POST') {
+    const sessionId = oid(parts[2]);
+    if (!sessionId) throw err('Jonli efir ID noto‘g‘ri');
+    const doc = await liveSessions.findOne({ _id: sessionId, active: true });
+    if (!doc) throw err('Jonli efir topilmadi', 404);
+    await liveSessions.updateOne({ _id: sessionId }, { $addToSet: { participants: me._id }, $set: { updatedAt: new Date() } });
+    const fresh = await liveSessions.findOne({ _id: sessionId });
+    return json(res, 200, { session: (await hydrateLiveSessions([fresh], me._id))[0] || null });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'live' && parts[2] && parts[3] === 'leave' && req.method === 'POST') {
+    const sessionId = oid(parts[2]);
+    if (!sessionId) throw err('Jonli efir ID noto‘g‘ri');
+    const doc = await liveSessions.findOne({ _id: sessionId });
+    if (!doc) throw err('Jonli efir topilmadi', 404);
+    await liveSessions.updateOne({ _id: sessionId }, { $pull: { participants: me._id }, $set: { updatedAt: new Date() } });
+    const fresh = await liveSessions.findOne({ _id: sessionId });
+    if (!fresh) return json(res, 200, { session: null });
+    const participants = fresh.participants || [];
+    const shouldStop = String(fresh.teacherId || '') === String(me._id) || !participants.length;
+    if (shouldStop) {
+      await liveSessions.updateOne({ _id: sessionId }, { $set: { active: false, endedAt: new Date(), updatedAt: new Date() } });
+      await liveSignals.deleteMany({ sessionId });
+      return json(res, 200, { session: null });
+    }
+    const after = await liveSessions.findOne({ _id: sessionId });
+    return json(res, 200, { session: (await hydrateLiveSessions([after], me._id))[0] || null });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'live' && parts[2] && parts[3] === 'stop' && req.method === 'POST') {
+    const sessionId = oid(parts[2]);
+    if (!sessionId) throw err('Jonli efir ID noto‘g‘ri');
+    const doc = await liveSessions.findOne({ _id: sessionId });
+    if (!doc) throw err('Jonli efir topilmadi', 404);
+    if (!isRole(me, 'admin') && String(doc.teacherId || '') !== String(me._id)) throw err('Faqat efir egasi to‘xtatadi', 403);
+    await liveSessions.updateOne({ _id: sessionId }, { $set: { active: false, endedAt: new Date(), updatedAt: new Date() } });
+    await liveSignals.deleteMany({ sessionId });
+    return json(res, 200, { ok: true });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'live' && parts[2] && parts[3] === 'poll' && req.method === 'GET') {
+    const sessionId = oid(parts[2]);
+    if (!sessionId) throw err('Jonli efir ID noto‘g‘ri');
+    const doc = await liveSessions.findOne({ _id: sessionId, active: true });
+    if (!doc) throw err('Jonli efir tugagan', 404);
+    await liveSessions.updateOne({ _id: sessionId }, { $addToSet: { participants: me._id }, $set: { updatedAt: new Date() } });
+    const inbox = await liveSignals.find({ sessionId, $or: [{ toUserId: me._id }, { toUserId: null }] }).sort({ createdAt: 1 }).limit(140).toArray();
+    if (inbox.length) {
+      await liveSignals.deleteMany({ _id: { $in: inbox.map((item) => item._id) } });
+    }
+    const [fresh] = await hydrateLiveSessions([await liveSessions.findOne({ _id: sessionId })], me._id);
+    const comments = await hydrateLiveComments(await liveSessionComments.find({ sessionId }).sort({ createdAt: -1 }).limit(80).toArray());
+    return json(res, 200, {
+      session: fresh || null,
+      comments,
+      signals: inbox.map((item) => ({
+        id: String(item._id),
+        fromUserId: String(item.fromUserId),
+        toUserId: item.toUserId ? String(item.toUserId) : '',
+        type: item.type,
+        data: item.data || {},
+        createdAt: item.createdAt,
+      })),
+    });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'live' && parts[2] && parts[3] === 'signal' && req.method === 'POST') {
+    const sessionId = oid(parts[2]);
+    if (!sessionId) throw err('Jonli efir ID noto‘g‘ri');
+    const sessionDoc = await liveSessions.findOne({ _id: sessionId, active: true });
+    if (!sessionDoc) throw err('Jonli efir topilmadi', 404);
+    const b = await body(req);
+    const toUserId = b.toUserId ? oid(b.toUserId) : null;
+    const type = clean(b.type, 20);
+    if (!['offer', 'answer', 'candidate'].includes(type)) throw err('Signal turi noto‘g‘ri');
+    await liveSignals.insertOne({
+      sessionId,
+      fromUserId: me._id,
+      toUserId,
+      type,
+      data: b.data || {},
+      createdAt: new Date(),
+    });
+    await liveSessions.updateOne({ _id: sessionId }, { $set: { updatedAt: new Date() } });
+    return json(res, 201, { ok: true });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'live' && parts[2] && parts[3] === 'like' && req.method === 'POST') {
+    const sessionId = oid(parts[2]);
+    if (!sessionId) throw err('Jonli efir ID noto‘g‘ri');
+    const sessionDoc = await liveSessions.findOne({ _id: sessionId });
+    if (!sessionDoc) throw err('Jonli efir topilmadi', 404);
+    const existing = await liveSessionLikes.findOne({ sessionId, userId: me._id });
+    if (existing) await liveSessionLikes.deleteOne({ _id: existing._id });
+    else await liveSessionLikes.insertOne({ sessionId, userId: me._id, createdAt: new Date() });
+    const likesCount = await liveSessionLikes.countDocuments({ sessionId });
+    return json(res, 200, { ok: true, isLiked: !existing, likesCount });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'live' && parts[2] && parts[3] === 'comments' && req.method === 'POST') {
+    const sessionId = oid(parts[2]);
+    if (!sessionId) throw err('Jonli efir ID noto‘g‘ri');
+    const sessionDoc = await liveSessions.findOne({ _id: sessionId });
+    if (!sessionDoc) throw err('Jonli efir topilmadi', 404);
+    const b = await body(req);
+    const textValue = clean(b.text, 900);
+    if (!textValue) throw err('Izoh matni bo‘sh');
+    const ins = await liveSessionComments.insertOne({ sessionId, userId: me._id, text: textValue, createdAt: new Date() });
+    const fresh = await liveSessionComments.findOne({ _id: ins.insertedId });
+    const comments = await hydrateLiveComments([fresh]);
+    const commentsCount = await liveSessionComments.countDocuments({ sessionId });
+    return json(res, 201, { comment: comments[0] || null, commentsCount });
   }
 
   if (req.method === 'GET' && url.pathname === '/api/chats') {
@@ -2079,6 +3468,43 @@ async function api(req, res, url) {
       isMember: (group.members || []).some((item) => item.id === String(me._id)),
     }));
     return json(res, 200, { groups: result });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'groups' && parts[2] && req.method === 'PATCH') {
+    const groupId = oid(parts[2]);
+    if (!groupId) throw err('Guruh ID noto‘g‘ri');
+    const group = await mustCourseGroupForUser(groupId, me);
+    if (!canManageGroupContent(group, me)) throw err('Faqat ushbu guruh ustozi tahrirlay oladi', 403);
+    const b = await body(req);
+    const nextUsername = b.username !== undefined ? username(b.username) : null;
+    if (b.username !== undefined) {
+      if (nextUsername && nextUsername.length < 3) throw err('Guruh username kamida 3 ta bo‘lsin');
+      if (nextUsername) {
+        const duplicate = await chats.findOne({ _id: { $ne: groupId }, type: 'group', username: nextUsername });
+        if (duplicate) throw err('Guruh username band', 409);
+      }
+    }
+    const patch = {
+      ...(b.name !== undefined ? { name: clean(b.name, 50) } : {}),
+      ...(b.subject !== undefined ? { subject: clean(b.subject, 80) } : {}),
+      ...(b.description !== undefined ? { description: clean(b.description, 160) } : {}),
+      ...(b.avatar !== undefined ? { avatar: clean(b.avatar, 500) } : {}),
+      ...(b.username !== undefined ? { username: nextUsername } : {}),
+      updatedAt: new Date(),
+    };
+    await chats.updateOne({ _id: groupId, type: 'group' }, { $set: patch });
+    const fresh = await chats.findOne({ _id: groupId, type: 'group' });
+    return json(res, 200, { group: (await hydrateChats([fresh], me._id))[0] });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'groups' && parts[2] && req.method === 'DELETE') {
+    const groupId = oid(parts[2]);
+    if (!groupId) throw err('Guruh ID noto‘g‘ri');
+    const group = await mustCourseGroupForUser(groupId, me);
+    if (!canManageGroupContent(group, me)) throw err('Faqat ushbu guruh ustozi o‘chirishi mumkin', 403);
+    await deleteChatCascade(groupId);
+    await users.updateMany({ studyGroupIds: groupId }, { $pull: { studyGroupIds: groupId } });
+    return json(res, 200, { ok: true });
   }
 
   if (parts[0] === 'api' && parts[1] === 'groups' && parts[2] && parts[3] === 'hub' && req.method === 'GET') {
@@ -2126,6 +3552,38 @@ async function api(req, res, url) {
     return json(res, 201, { announcement: (await hydrateAnnouncements([{ ...doc, _id: ins.insertedId }]))[0] });
   }
 
+  if (parts[0] === 'api' && parts[1] === 'groups' && parts[2] && parts[3] === 'announcements' && parts[4] && req.method === 'PATCH') {
+    const groupId = oid(parts[2]);
+    const announcementId = oid(parts[4]);
+    if (!groupId || !announcementId) throw err('ID noto‘g‘ri');
+    const group = await mustCourseGroupForUser(groupId, me);
+    if (!canManageGroupContent(group, me)) throw err('Faqat shu guruh ustoziga ruxsat beriladi', 403);
+    const existing = await announcements.findOne({ _id: announcementId, groupId });
+    if (!existing) throw err('E‘lon topilmadi', 404);
+    const b = await body(req);
+    const patch = {
+      ...(b.title !== undefined ? { title: clean(b.title, 80) } : {}),
+      ...(b.body !== undefined ? { body: clean(b.body, 1600) } : {}),
+      ...(b.pinned !== undefined ? { pinned: !!b.pinned } : {}),
+      updatedAt: new Date(),
+    };
+    if (patch.title !== undefined && patch.title.length < 3) throw err('E‘lon sarlavhasi qisqa');
+    if (patch.body !== undefined && patch.body.length < 4) throw err('E‘lon matnini kiriting');
+    await announcements.updateOne({ _id: announcementId, groupId }, { $set: patch });
+    const fresh = await announcements.findOne({ _id: announcementId, groupId });
+    return json(res, 200, { announcement: (await hydrateAnnouncements([fresh]))[0] || null });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'groups' && parts[2] && parts[3] === 'announcements' && parts[4] && req.method === 'DELETE') {
+    const groupId = oid(parts[2]);
+    const announcementId = oid(parts[4]);
+    if (!groupId || !announcementId) throw err('ID noto‘g‘ri');
+    const group = await mustCourseGroupForUser(groupId, me);
+    if (!canManageGroupContent(group, me)) throw err('Faqat shu guruh ustoziga ruxsat beriladi', 403);
+    await announcements.deleteOne({ _id: announcementId, groupId });
+    return json(res, 200, { ok: true });
+  }
+
   if (parts[0] === 'api' && parts[1] === 'groups' && parts[2] && parts[3] === 'materials' && req.method === 'POST') {
     const groupId = oid(parts[2]);
     if (!groupId) throw err('Guruh ID noto‘g‘ri');
@@ -2153,6 +3611,42 @@ async function api(req, res, url) {
     };
     const ins = await materials.insertOne(doc);
     return json(res, 201, { material: (await hydrateMaterials([{ ...doc, _id: ins.insertedId }]))[0] });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'groups' && parts[2] && parts[3] === 'materials' && parts[4] && req.method === 'PATCH') {
+    const groupId = oid(parts[2]);
+    const materialId = oid(parts[4]);
+    if (!groupId || !materialId) throw err('ID noto‘g‘ri');
+    const group = await mustCourseGroupForUser(groupId, me);
+    if (!canManageGroupContent(group, me)) throw err('Faqat shu guruh ustoziga ruxsat beriladi', 403);
+    const existing = await materials.findOne({ _id: materialId, groupId });
+    if (!existing) throw err('Material topilmadi', 404);
+    const b = await body(req);
+    const patch = {
+      ...(b.type !== undefined ? { type: clean(b.type, 24) || 'material' } : {}),
+      ...(b.title !== undefined ? { title: clean(b.title, 80) } : {}),
+      ...(b.description !== undefined ? { description: clean(b.description, 1600) } : {}),
+      ...(b.link !== undefined ? { link: clean(b.link, 500) } : {}),
+      ...(b.dueDate !== undefined ? { dueDate: b.dueDate ? dateKey(b.dueDate) : '' } : {}),
+      updatedAt: new Date(),
+    };
+    if (patch.type !== undefined && !['material', 'homework', 'lesson'].includes(patch.type)) throw err('Type noto‘g‘ri');
+    if (patch.title !== undefined && patch.title.length < 3) throw err('Nomi juda qisqa');
+    if (patch.description !== undefined && patch.description.length < 3) throw err('Izoh kiriting');
+    await materials.updateOne({ _id: materialId, groupId }, { $set: patch });
+    const fresh = await materials.findOne({ _id: materialId, groupId });
+    return json(res, 200, { material: (await hydrateMaterials([fresh]))[0] || null });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'groups' && parts[2] && parts[3] === 'materials' && parts[4] && req.method === 'DELETE') {
+    const groupId = oid(parts[2]);
+    const materialId = oid(parts[4]);
+    if (!groupId || !materialId) throw err('ID noto‘g‘ri');
+    const group = await mustCourseGroupForUser(groupId, me);
+    if (!canManageGroupContent(group, me)) throw err('Faqat shu guruh ustoziga ruxsat beriladi', 403);
+    await materials.deleteOne({ _id: materialId, groupId });
+    await materialSubmissions.deleteMany({ materialId });
+    return json(res, 200, { ok: true });
   }
 
   if (parts[0] === 'api' && parts[1] === 'groups' && parts[2] && parts[3] === 'attendance' && req.method === 'GET') {
@@ -2356,10 +3850,11 @@ async function api(req, res, url) {
   }
 
   if (parts[0] === 'api' && parts[1] === 'chats' && parts[2] && parts[3] === 'messages' && req.method === 'GET') {
-    await mustChat(oid(parts[2]), me._id);
-    const list = await messages.find({ chatId: oid(parts[2]) }).sort({ createdAt: -1 }).limit(60).toArray();
+    const chatId = oid(parts[2]);
+    await mustChat(chatId, me._id);
+    const list = await messages.find({ chatId }).sort({ createdAt: -1 }).limit(60).toArray();
     list.reverse();
-    return json(res, 200, { messages: await hydrateMessages(list) });
+    return json(res, 200, { messages: await hydrateMessages(list, me._id) });
   }
 
   if (parts[0] === 'api' && parts[1] === 'chats' && parts[2] && parts[3] === 'messages' && req.method === 'POST') {
@@ -2368,11 +3863,86 @@ async function api(req, res, url) {
     const b = await body(req);
     const textMsg = clean(b.text, 1500);
     const mediaUrl = clean(b.mediaUrl, 500);
+    const replyToId = oid(b.replyToId);
     if (!textMsg && !mediaUrl) throw err('Xabar yoki rasm yuboring');
-    const doc = { chatId, senderId: me._id, text: textMsg, mediaUrl, mediaType: clean(b.mediaType, 30), createdAt: new Date() };
+    if (replyToId) {
+      const parent = await messages.findOne({ _id: replyToId, chatId });
+      if (!parent) throw err('Reply qilinadigan xabar topilmadi');
+    }
+    const now = new Date();
+    const doc = {
+      chatId,
+      senderId: me._id,
+      text: textMsg,
+      mediaUrl,
+      mediaType: clean(b.mediaType, 30),
+      replyToId: replyToId || null,
+      reactions: [],
+      createdAt: now,
+      updatedAt: now,
+      editedAt: null,
+    };
     const ins = await messages.insertOne(doc);
     await chats.updateOne({ _id: chatId }, { $set: { updatedAt: doc.createdAt, lastMessageAt: doc.createdAt, lastMessagePreview: preview(doc), lastSenderId: me._id } });
-    return json(res, 201, { message: (await hydrateMessages([{ ...doc, _id: ins.insertedId }]))[0] });
+    return json(res, 201, { message: (await hydrateMessages([{ ...doc, _id: ins.insertedId }], me._id))[0] });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'chats' && parts[2] && parts[3] === 'messages' && parts[4] && req.method === 'PATCH') {
+    const chatId = oid(parts[2]);
+    const messageId = oid(parts[4]);
+    if (!chatId || !messageId) throw err('ID noto‘g‘ri');
+    await mustChat(chatId, me._id);
+    const messageDoc = await messages.findOne({ _id: messageId, chatId });
+    if (!messageDoc) throw err('Xabar topilmadi', 404);
+    if (String(messageDoc.senderId || '') !== String(me._id)) throw err('Faqat o‘zingiz yozgan xabarni tahrirlaysiz', 403);
+    const b = await body(req);
+    const nextText = clean(b.text, 1500);
+    if (!nextText && !messageDoc.mediaUrl) throw err('Xabar bo‘sh bo‘lib qolmasin');
+    const now = new Date();
+    await messages.updateOne(
+      { _id: messageId, chatId },
+      {
+        $set: {
+          text: nextText,
+          updatedAt: now,
+          editedAt: now,
+        },
+      }
+    );
+    const fresh = await messages.findOne({ _id: messageId, chatId });
+    await syncChatMeta(chatId);
+    return json(res, 200, { message: (await hydrateMessages([fresh], me._id))[0] || null });
+  }
+
+  if (parts[0] === 'api' && parts[1] === 'chats' && parts[2] && parts[3] === 'messages' && parts[4] && parts[5] === 'reactions' && req.method === 'POST') {
+    const chatId = oid(parts[2]);
+    const messageId = oid(parts[4]);
+    if (!chatId || !messageId) throw err('ID noto‘g‘ri');
+    await mustChat(chatId, me._id);
+    const messageDoc = await messages.findOne({ _id: messageId, chatId });
+    if (!messageDoc) throw err('Xabar topilmadi', 404);
+    const b = await body(req);
+    const emoji = reactionEmoji(b.emoji);
+    const mine = String(me._id);
+    const nextReactions = Array.isArray(messageDoc.reactions) ? [...messageDoc.reactions] : [];
+    const reactionIndex = nextReactions.findIndex((item) => item?.emoji === emoji);
+    if (reactionIndex === -1) {
+      nextReactions.push({ emoji, userIds: [me._id] });
+    } else {
+      const userIds = uniqIds(nextReactions[reactionIndex].userIds || []);
+      const hasMine = userIds.some((id) => String(id) === mine);
+      if (hasMine) {
+        const trimmed = userIds.filter((id) => String(id) !== mine);
+        if (!trimmed.length) nextReactions.splice(reactionIndex, 1);
+        else nextReactions[reactionIndex] = { emoji, userIds: trimmed };
+      } else {
+        userIds.push(me._id);
+        nextReactions[reactionIndex] = { emoji, userIds };
+      }
+    }
+    await messages.updateOne({ _id: messageId, chatId }, { $set: { reactions: nextReactions, updatedAt: new Date() } });
+    const fresh = await messages.findOne({ _id: messageId, chatId });
+    return json(res, 200, { message: (await hydrateMessages([fresh], me._id))[0] || null });
   }
 
   throw err('Topilmadi', 404);
@@ -2381,7 +3951,14 @@ async function api(req, res, url) {
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://' + (req.headers.host || 'localhost'));
-    if (req.method === 'GET' && url.pathname === '/') return redir(res, '/index.html');
+    const learnhubIndex = path.join(PUBLIC, 'learnhub-1.0.0', 'dist', 'index.html');
+    if (req.method === 'GET' && url.pathname === '/') {
+      return redir(res, '/index.html');
+    }
+    if (req.method === 'GET' && url.pathname === '/learnhub') {
+      if (!fs.existsSync(learnhubIndex)) return json(res, 404, { error: 'LearnHub build topilmadi' });
+      return text(res, 200, fs.readFileSync(learnhubIndex, 'utf8'), 'text/html; charset=utf-8');
+    }
     if (req.method === 'GET' && url.pathname === '/admin') {
       return text(res, 200, fs.readFileSync(path.join(PUBLIC, 'admin.html'), 'utf8'), 'text/html; charset=utf-8');
     }
@@ -2390,13 +3967,20 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'GET' && url.pathname === '/login') return redir(res, '/login.html');
     if (req.method === 'GET' && url.pathname === '/dashboard') return redir(res, '/dashboard.html');
-    if (req.method === 'GET' && (url.pathname === '/register' || url.pathname === '/register.html')) return redir(res, '/login.html');
+    if (req.method === 'GET' && url.pathname === '/register') return redir(res, '/register.html');
+    if (req.method === 'GET' && url.pathname === '/payment') return redir(res, '/payment.html');
     if (url.pathname.startsWith('/api/')) return await api(req, res, url);
     if (req.method === 'GET') {
       const fileName = url.pathname.slice(1);
       const type = STATIC_FILES.get(fileName);
       if (type) {
         return text(res, 200, fs.readFileSync(path.join(PUBLIC, fileName), 'utf8'), type);
+      }
+      if (fileName) {
+        const filePath = path.join(PUBLIC, fileName);
+        if (!path.relative(PUBLIC, filePath).startsWith('..') && fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+          return send(res, 200, fs.readFileSync(filePath), mimeType(filePath));
+        }
       }
     }
     json(res, 404, { error: 'Topilmadi' });

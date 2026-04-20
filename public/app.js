@@ -8,6 +8,7 @@
   const routes = {
     landing: "/index.html",
     login: "/login.html",
+    register: "/register.html",
     dashboard: "/dashboard.html",
     chats: "/chats.html",
     chat: "/chat.html",
@@ -17,6 +18,9 @@
     schedule: "/schedule.html",
     materials: "/materials.html",
     material: "/material.html",
+    videos: "/videos.html",
+    video: "/video.html",
+    payment: "/payment.html",
     attendance: "/attendance.html",
     search: "/search.html",
     profile: "/profile.html",
@@ -29,7 +33,7 @@
     adminAttendance: "/admin-attendance.html",
     adminFinance: "/admin-finance.html",
   };
-  const protectedPages = new Set(["dashboard", "chats", "chat", "groups", "group", "announcements", "schedule", "materials", "material", "attendance", "search", "profile", "ai"]);
+  const protectedPages = new Set(["dashboard", "chats", "chat", "groups", "group", "announcements", "schedule", "materials", "material", "payment", "attendance", "search", "ai"]);
   const adminPages = new Set(["admin", "admin-landing", "admin-users", "admin-groups", "admin-content", "admin-attendance", "admin-finance"]);
   localStorage.removeItem(ADMIN_STORAGE_KEY);
   const state = {
@@ -65,6 +69,10 @@
     logout: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path></svg>',
     video: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="6" width="13" height="12" rx="3"></rect><path d="m16 10 5-3v10l-5-3"></path></svg>',
     videoOff: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="6" width="13" height="12" rx="3"></rect><path d="m16 10 5-3v10l-5-3"></path><path d="M4 4 20 20"></path></svg>',
+    play: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M8 5v14l11-7z"></path></svg>',
+    live: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="3"></circle><path d="M4.9 4.9a10 10 0 0 0 0 14.2"></path><path d="M19.1 4.9a10 10 0 0 1 0 14.2"></path><path d="M7.8 7.8a6 6 0 0 0 0 8.4"></path><path d="M16.2 7.8a6 6 0 0 1 0 8.4"></path></svg>',
+    like: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M7 10v10"></path><path d="M15 5.88 14 10h6a2 2 0 0 1 2 2l-1 8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h3l3-6a2 2 0 0 1 3 1.88Z"></path></svg>',
+    comment: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 5h16v10H8l-4 4z"></path></svg>',
     mic: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 16a4 4 0 0 0 4-4V7a4 4 0 1 0-8 0v5a4 4 0 0 0 4 4Z"></path><path d="M19 11a7 7 0 0 1-14 0"></path><path d="M12 18v3"></path></svg>',
     micOff: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 16a4 4 0 0 0 4-4V9"></path><path d="M8 8v4a4 4 0 0 0 6.8 2.8"></path><path d="M19 11a7 7 0 0 1-11.2 5.6"></path><path d="M12 18v3"></path><path d="M4 4 20 20"></path></svg>',
     edit: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"></path></svg>',
@@ -317,6 +325,20 @@
     return data;
   }
 
+  async function loadMeOptional() {
+    if (!state.token) {
+      state.me = null;
+      return null;
+    }
+    try {
+      return await loadMe();
+    } catch {
+      clearToken();
+      state.me = null;
+      return null;
+    }
+  }
+
   function quickChip(value, label) {
     return `<div class="quick-chip"><strong>${escapeHtml(String(value))}</strong><span>${escapeHtml(label)}</span></div>`;
   }
@@ -341,6 +363,14 @@
 
   function materialHref(materialId = "") {
     return materialId ? `${routes.material}?id=${encodeURIComponent(materialId)}` : routes.materials;
+  }
+
+  function videosHref(videoId = "") {
+    return videoId ? `${routes.video}?id=${encodeURIComponent(videoId)}` : routes.videos;
+  }
+
+  function liveHref(sessionId = "") {
+    return sessionId ? `${routes.video}?live=${encodeURIComponent(sessionId)}` : routes.videos;
   }
 
   function profileAction(user, label = "Profil", extraClass = "icon-button") {
@@ -373,13 +403,14 @@
   }
 
   function renderBottomNav() {
-    if (!isProtectedPage() || page === "chat" || page === "group") return "";
+    if (!state.token) return "";
+    if (page === "chat" || page === "group" || (page === "video" && queryParam("live"))) return "";
     return `
       <nav class="bottom-nav">
         ${navItem("home", "Dashboard", routes.dashboard, page === "dashboard")}
         ${navItem("chats", "Chatlar", routes.chats, page === "chats" || page === "chat")}
         ${navItem("groups", "Guruhlar", routes.groups, page === "groups" || page === "group")}
-        ${navItem("ai", "AI Ustoz", routes.ai, page === "ai")}
+        ${navItem("play", "Videolar", routes.videos, page === "videos" || page === "video")}
         ${navItem("profile", "Profil", routes.profile, page === "profile")}
       </nav>
     `;
@@ -510,15 +541,89 @@
     `;
   }
 
+  function videoPreviewThumb(video, fallback = "") {
+    if (video?.youtubeThumbnail) return video.youtubeThumbnail;
+    const meta = youtubeMeta(video?.link || video?.youtubeWatchUrl || "");
+    return meta?.thumb || fallback || "";
+  }
+
+  function videoResult(video) {
+    const thumb = videoPreviewThumb(video);
+    return `
+      <article class="result-item video-result">
+        <a class="result-main result-link" href="${videosHref(video.id)}">
+          <div class="result-video-thumb-wrap">
+            ${thumb ? `<img class="result-video-thumb" src="${escapeHtml(thumb)}" alt="${escapeHtml(video.title || "Video")}">` : `<div class="result-video-thumb-fallback">${icons.play}</div>`}
+            <span class="result-video-play">${icons.play}</span>
+          </div>
+          <div class="result-copy">
+            <div class="result-top">
+              <p class="result-name">${escapeHtml(video.title || "Video dars")}</p>
+              <span class="subtle-tag">${escapeHtml(formatDate(video.createdAt))}</span>
+            </div>
+            <p class="result-preview">${escapeHtml(video.description || "Video tavsifi mavjud emas.")}</p>
+            <p class="result-preview">${escapeHtml(video.teacher?.fullName || "Ustoz")} • ${escapeHtml(String(video.likesCount || 0))} like • ${escapeHtml(String(video.commentsCount || 0))} izoh</p>
+          </div>
+        </a>
+        <div class="page-actions">
+          <a class="button secondary" href="${videosHref(video.id)}">Batafsil</a>
+          ${profileAction(video.teacher, "Profil")}
+        </div>
+      </article>
+    `;
+  }
+
+  function liveResult(session) {
+    return `
+      <article class="result-item live-result">
+        <a class="result-main result-link" href="${liveHref(session.id)}">
+          <div class="live-result-dot"></div>
+          <div class="result-copy">
+            <div class="result-top">
+              <p class="result-name">${escapeHtml(session.title || "Jonli efir")}</p>
+              <span class="subtle-tag">LIVE</span>
+            </div>
+            <p class="result-preview">${escapeHtml(session.teacher?.fullName || "Ustoz")} • ${escapeHtml(String(session.participantCount || 0))} ishtirokchi</p>
+            <p class="result-preview">${escapeHtml(session.description || "Jonli dars efiri")}</p>
+          </div>
+        </a>
+        <div class="page-actions">
+          <a class="button primary" href="${liveHref(session.id)}">Qo'shilish</a>
+          ${profileAction(session.teacher, "Profil")}
+        </div>
+      </article>
+    `;
+  }
+
+  function messageReactionsMarkup(message) {
+    const reactions = Array.isArray(message?.reactions) ? message.reactions : [];
+    if (!reactions.length) return "";
+    return `
+      <div class="message-reactions">
+        ${reactions
+          .map(
+            (item) => `
+              <button class="message-reaction-chip ${item.reacted ? "reacted" : ""}" type="button" data-message-react="${escapeHtml(message.id)}" data-emoji="${escapeHtml(item.emoji)}">
+                <span>${escapeHtml(item.emoji)}</span>
+                <strong>${escapeHtml(String(item.count || 0))}</strong>
+              </button>
+            `
+          )
+          .join("")}
+      </div>
+    `;
+  }
+
   function messageItem(message, chatType) {
     const mine = state.me && message.sender && message.sender.id === state.me.id;
     const senderAvatar = message.sender?.id
       ? `<a class="message-avatar-link" href="${profileHref(message.sender.id)}">${avatar(message.sender?.fullName || "User", message.sender?.avatar, "avatar small")}</a>`
       : avatar(message.sender?.fullName || "User", message.sender?.avatar, "avatar small");
+    const reply = message.replyTo;
     return `
-      <div class="message-row ${mine ? "mine" : ""}">
+      <div class="message-row ${mine ? "mine" : ""}" data-message-row="${escapeHtml(message.id)}">
         ${mine ? "" : senderAvatar}
-        <article class="message-bubble">
+        <article class="message-bubble" data-message-bubble="${escapeHtml(message.id)}" data-message-mine="${mine ? "1" : "0"}">
           ${
             chatType === "group" && !mine
               ? message.sender?.id
@@ -526,9 +631,20 @@
                 : `<p class="message-author">${escapeHtml(message.sender?.fullName || "A'zo")}</p>`
               : ""
           }
+          ${
+            reply
+              ? `
+                <div class="message-reply">
+                  <p class="message-reply-author">${escapeHtml(reply.sender?.fullName || "Xabar")}</p>
+                  <p class="message-reply-text">${escapeHtml(reply.text || (reply.mediaUrl ? "Media xabar" : "Xabar"))}</p>
+                </div>
+              `
+              : ""
+          }
           ${message.mediaUrl ? `<img class="message-media" src="${escapeHtml(message.mediaUrl)}" alt="media">` : ""}
           ${message.text ? `<p class="message-text">${nl2br(message.text)}</p>` : ""}
-          <span class="message-time">${escapeHtml(formatTime(message.createdAt))}</span>
+          ${messageReactionsMarkup(message)}
+          <span class="message-time">${escapeHtml(formatTime(message.createdAt))}${message.editedAt ? " • edited" : ""}</span>
         </article>
       </div>
     `;
@@ -606,7 +722,71 @@
     return map[String(type || "").toLowerCase()] || "Yozuv";
   }
 
-  function announcementCard(item, showGroup = false) {
+  function youtubeId(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    if (/^[a-zA-Z0-9_-]{11}$/.test(raw)) return raw;
+    try {
+      const parsed = new URL(raw);
+      const host = parsed.hostname.replace(/^www\./i, "").toLowerCase();
+      if (host === "youtu.be") {
+        const shortId = (parsed.pathname || "").replace(/^\/+/, "").split("/")[0] || "";
+        return /^[a-zA-Z0-9_-]{11}$/.test(shortId) ? shortId : "";
+      }
+      if (host === "youtube.com" || host === "m.youtube.com" || host === "music.youtube.com") {
+        const watchId = parsed.searchParams.get("v");
+        if (watchId && /^[a-zA-Z0-9_-]{11}$/.test(watchId)) return watchId;
+        const parts = parsed.pathname.split("/").filter(Boolean);
+        if (["embed", "shorts", "live"].includes(parts[0]) && /^[a-zA-Z0-9_-]{11}$/.test(parts[1] || "")) {
+          return parts[1];
+        }
+      }
+    } catch {}
+    const fallback = raw.match(/(?:v=|\/embed\/|\/shorts\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    return fallback ? fallback[1] : "";
+  }
+
+  function youtubeMeta(link) {
+    const id = youtubeId(link);
+    if (!id) return null;
+    return {
+      id,
+      embed: `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&controls=1&iv_load_policy=3`,
+      watch: `https://www.youtube.com/watch?v=${id}`,
+      thumb: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+    };
+  }
+
+  function youtubeEmbedCard(meta, compact = false) {
+    if (!meta?.embed) return "";
+    return `
+      <div class="yt-card ${compact ? "compact" : ""}">
+        <iframe
+          class="yt-frame"
+          src="${escapeHtml(meta.embed)}"
+          title="YouTube preview"
+          loading="lazy"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerpolicy="strict-origin-when-cross-origin"
+          allowfullscreen
+        ></iframe>
+        <div class="page-actions">
+          <a class="button secondary" href="${escapeHtml(meta.watch)}" target="_blank" rel="noopener noreferrer">YouTube'da ochish</a>
+        </div>
+      </div>
+    `;
+  }
+
+  function requestStatusLabel(status) {
+    const map = {
+      pending: "Kutilmoqda",
+      approved: "Tasdiqlandi",
+      rejected: "Rad etildi",
+    };
+    return map[String(status || "").toLowerCase()] || "Noma'lum";
+  }
+
+  function announcementCard(item, showGroup = false, manageActions = "") {
     return `
       <article class="mini-card ${item.pinned ? "is-pinned" : ""}">
         <div class="mini-card-top">
@@ -619,6 +799,7 @@
           ${showGroup && item.group ? `<span>${escapeHtml(item.group.name)}</span>` : ""}
           <span>${escapeHtml(formatDate(item.createdAt))}</span>
         </div>
+        ${manageActions ? `<div class="page-actions">${manageActions}</div>` : ""}
       </article>
     `;
   }
@@ -639,13 +820,20 @@
     `;
   }
 
-  function materialCard(item, showGroup = false) {
+  function materialCard(item, showGroup = false, manageActions = "") {
+    const yt = item?.hasYoutubeVideo ? {
+      id: item.youtubeId,
+      embed: item.youtubeEmbedUrl,
+      watch: item.youtubeWatchUrl,
+      thumb: item.youtubeThumbnail,
+    } : youtubeMeta(item?.link || "");
     return `
       <article class="mini-card">
         <div class="mini-card-top">
           <p class="mini-card-title">${escapeHtml(item.title)}</p>
           <span class="mini-badge">${escapeHtml(materialTypeLabel(item.type))}</span>
         </div>
+        ${yt ? youtubeEmbedCard(yt, true) : ""}
         <p class="mini-card-copy">${escapeHtml(item.description)}</p>
         <div class="mini-card-meta">
           <span>${escapeHtml(item.authorName || "Admin")}</span>
@@ -654,7 +842,55 @@
         </div>
         <div class="page-actions">
           <a class="button secondary" href="${materialHref(item.id)}">Batafsil</a>
-          ${item.link ? `<a class="button secondary" href="${escapeHtml(item.link)}" target="_blank" rel="noopener noreferrer">Havola</a>` : ""}
+          ${item.link ? `<a class="button secondary" href="${escapeHtml(yt?.watch || item.link)}" target="_blank" rel="noopener noreferrer">${yt ? "Video" : "Havola"}</a>` : ""}
+          ${manageActions}
+        </div>
+      </article>
+    `;
+  }
+
+  function videoCard(item, compact = false, fallbackThumb = "", canManage = false) {
+    const thumb = videoPreviewThumb(item, fallbackThumb);
+    return `
+      <article class="video-card ${compact ? "compact" : ""}">
+        <a class="video-card-thumb-wrap" href="${videosHref(item.id)}">
+          ${thumb ? `<img class="video-card-thumb" src="${escapeHtml(thumb)}" alt="${escapeHtml(item.title || "Video")}">` : `<div class="video-card-thumb-fallback">${icons.play}</div>`}
+          <span class="video-card-play">${icons.play}</span>
+        </a>
+        <div class="video-card-copy">
+          <a class="video-card-title" href="${videosHref(item.id)}">${escapeHtml(item.title || "Video dars")}</a>
+          <p class="video-card-meta">${escapeHtml(item.teacher?.fullName || "Ustoz")} • ${escapeHtml(String(item.likesCount || 0))} like • ${escapeHtml(String(item.commentsCount || 0))} izoh</p>
+          ${item.tags?.length ? `<p class="video-card-tags">${item.tags.map((tag) => `#${escapeHtml(tag)}`).join(" ")}</p>` : ""}
+          <div class="page-actions">
+            <a class="button secondary" href="${videosHref(item.id)}">Batafsil</a>
+            ${item.teacher?.id ? `<a class="button secondary" href="${profileHref(item.teacher.id)}">Profil</a>` : ""}
+            ${
+              canManage
+                ? `
+                  <button class="button secondary" type="button" data-video-edit="${escapeHtml(item.id)}">${icons.edit}<span>Edit</span></button>
+                  <button class="button danger" type="button" data-video-delete="${escapeHtml(item.id)}">${icons.trash}<span>Delete</span></button>
+                `
+                : ""
+            }
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  function liveCard(item, compact = false) {
+    return `
+      <article class="live-card ${compact ? "compact" : ""}">
+        <div class="live-card-head">
+          <span class="live-dot"></span>
+          <span>LIVE</span>
+        </div>
+        <h3>${escapeHtml(item.title || "Jonli efir")}</h3>
+        <p>${escapeHtml(item.teacher?.fullName || "Ustoz")}</p>
+        <p>${escapeHtml(String(item.participantCount || 0))} ishtirokchi • ${escapeHtml(String(item.likesCount || 0))} like</p>
+        <div class="page-actions">
+          <a class="button primary" href="${liveHref(item.id)}">Efirga kirish</a>
+          ${item.teacher?.id ? `<a class="button secondary" href="${profileHref(item.teacher.id)}">Profil</a>` : ""}
         </div>
       </article>
     `;
@@ -735,10 +971,16 @@
 
   async function renderLandingPage() {
     clearPolling();
-    const site = (await loadSiteContent()) || {};
-    const courses = Array.isArray(site.courses) && site.courses.length
-      ? site.courses
-      : ["Ingliz tili", "Rus tili", "Mobile dasturlash"];
+    const landingData = await api("/api/public/landing");
+    const site = landingData.site || {};
+    state.site = site;
+    applyBrandMeta();
+    const highlights = landingData.highlights || {};
+    const teachers = highlights.topTeachers || [];
+    const courses = highlights.topCourses || [];
+    const paidCourses = highlights.topCoursesByPayments || [];
+    const videos = highlights.featuredVideos || [];
+    const activeLives = highlights.activeLives || [];
     const gallery = Array.isArray(site.gallery) ? site.gallery : [];
     const loginTarget = state.token ? routes.dashboard : routes.login;
 
@@ -746,39 +988,40 @@
       <main class="landing-shell">
         <header class="landing-header">
           <a class="landing-brand" href="${routes.landing}">
-            ${site.logoUrl ? `<img src="${escapeHtml(site.logoUrl)}" alt="${escapeHtml(brandName())} logo">` : `<span class="landing-logo-fallback">${escapeHtml((brandName() || "C").slice(0, 1).toUpperCase())}</span>`}
+            ${site.logoUrl ? `<img src="${escapeHtml(site.logoUrl)}" alt="${escapeHtml(site.brandName || BRAND_DEFAULT)} logo">` : `<span class="landing-logo-fallback">${escapeHtml((site.brandName || BRAND_DEFAULT).slice(0, 1).toUpperCase())}</span>`}
             <div>
-              <p>${escapeHtml(brandName())}</p>
-              <span>${escapeHtml(site.brandTagline || "O'quv markazi")}</span>
+              <p>${escapeHtml(site.brandName || BRAND_DEFAULT)}</p>
+              <span>${escapeHtml(site.brandTagline || "Premium ta'lim markazi")}</span>
             </div>
           </a>
           <div class="page-actions">
             <button class="icon-button" data-theme-toggle aria-label="Mavzu">${resolvedTheme() === "dark" ? icons.sun : icons.moon}</button>
-            <a class="button secondary" href="${routes.login}">Kirish</a>
-            <a class="button primary" href="${loginTarget}">${state.token ? "Kabinet" : "Boshlash"}</a>
+            <a class="button secondary" href="${routes.videos}">${icons.play}<span>Videolar</span></a>
+            <a class="button primary" href="${loginTarget}">${state.token ? "Kabinet" : "Kirish"}</a>
           </div>
         </header>
 
         <section class="landing-hero panel">
           <div class="landing-hero-copy">
-            <p class="kicker">${escapeHtml(site.brandTagline || "Cliffs Learning Center")}</p>
-            <h1>${escapeHtml(site.heroTitle || "Zamonaviy ta'lim bilan kuchli kelajak")}</h1>
-            <p>${escapeHtml(site.heroSubtitle || "Ingliz tili, rus tili, mobile dasturlash va yana ko'plab fanlar bo'yicha intensiv kurslar.")}</p>
+            <p class="kicker">${escapeHtml(site.brandTagline || "Learn Social Platform")}</p>
+            <h1>${escapeHtml(site.heroTitle || "Eng yaxshi ustozlar bilan zamonaviy ta'lim")}</h1>
+            <p>${escapeHtml(site.heroSubtitle || "Top obunachili o'qituvchilar, yuqori natijali kurslar va video darslar bir joyda.")}</p>
             <div class="landing-hero-actions">
-              <a class="button primary" href="${routes.login}">O'quvchi kabineti</a>
-              <a class="button secondary" href="#courses">Kurslar</a>
+              <a class="button primary" href="${routes.videos}">${icons.play}<span>${escapeHtml(site.heroPrimaryCta || "Videodarslarni ko'rish")}</span></a>
+              <a class="button secondary" href="#teachers">${escapeHtml(site.heroSecondaryCta || "Ustozlar")}</a>
             </div>
             <div class="landing-meta">
+              <span>Top ustozlar: ${escapeHtml(String(teachers.length))} ta</span>
+              <span>Faol kurslar: ${escapeHtml(String(courses.length))} ta</span>
+              <span>Jonli efir: ${escapeHtml(String(activeLives.length))} ta</span>
               ${site.phone ? `<span>Telefon: ${escapeHtml(site.phone)}</span>` : ""}
-              ${site.address ? `<span>Manzil: ${escapeHtml(site.address)}</span>` : ""}
-              ${site.workingHours ? `<span>Ish vaqti: ${escapeHtml(site.workingHours)}</span>` : ""}
             </div>
           </div>
           <div class="landing-hero-media">
             ${
               site.heroImage
-                ? `<img src="${escapeHtml(site.heroImage)}" alt="${escapeHtml(brandName())} dars jarayoni">`
-                : `<div class="landing-hero-placeholder">Cliffs</div>`
+                ? `<img src="${escapeHtml(site.heroImage)}" alt="Landing hero">`
+                : `<div class="landing-hero-placeholder">${escapeHtml((site.brandName || BRAND_DEFAULT).slice(0, 12))}</div>`
             }
           </div>
         </section>
@@ -786,69 +1029,186 @@
         <section class="panel panel-pad landing-section">
           <div class="landing-trust-grid">
             <article class="landing-trust-card">
-              <strong>${escapeHtml(String(courses.length))}+</strong>
-              <span>Faol yo'nalish</span>
+              <strong>${escapeHtml(String(highlights.totals?.teachers || teachers.length))}</strong>
+              <span>Faol o'qituvchi</span>
             </article>
             <article class="landing-trust-card">
-              <strong>Offline / Online</strong>
-              <span>Moslashuvchan dars formati</span>
+              <strong>${escapeHtml(String(highlights.totals?.videos || videos.length))}</strong>
+              <span>Video darslar</span>
             </article>
             <article class="landing-trust-card">
-              <strong>Praktik yondashuv</strong>
-              <span>Natijaga yo'naltirilgan tizim</span>
+              <strong>${escapeHtml(String(highlights.totals?.live || activeLives.length))}</strong>
+              <span>Jonli efirlar</span>
             </article>
           </div>
+        </section>
+
+        <section id="teachers" class="panel panel-pad landing-section">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">Top o'qituvchilar</h2>
+              <p class="section-subtitle">Eng ko'p obunachili mentorlar</p>
+            </div>
+          </div>
+          ${
+            teachers.length
+              ? `<div class="landing-teacher-grid">${teachers
+                  .map(
+                    (teacher) => `
+                      <article class="landing-teacher-card">
+                        <div class="landing-teacher-avatar-wrap ${teacher.isLive ? "is-live" : ""}">
+                          ${teacher.avatar ? `<img class="landing-teacher-avatar" src="${escapeHtml(teacher.avatar)}" alt="${escapeHtml(teacher.fullName || "Ustoz")}">` : `<div class="landing-teacher-avatar avatar-fallback">${escapeHtml((teacher.fullName || "U").slice(0, 1).toUpperCase())}</div>`}
+                          ${teacher.isLive ? `<span class="landing-live-badge">${icons.live}<span>LIVE</span></span>` : ""}
+                        </div>
+                        <h3>${escapeHtml(teacher.fullName || "Ustoz")}</h3>
+                        <p>${escapeHtml(teacher.bio || "Professional mentor")}</p>
+                        <div class="landing-teacher-meta">
+                          <span>${escapeHtml(String(teacher.followerCount || 0))} obunachi</span>
+                          <span>${escapeHtml(String(teacher.studentCount || 0))} talaba</span>
+                        </div>
+                        <div class="page-actions">
+                          <a class="button secondary" href="${profileHref(teacher.id)}">Profilga o'tish</a>
+                          ${
+                            state.token && state.me?.id !== teacher.id
+                              ? `<button class="button ${teacher.isFollowing ? "secondary" : "primary"}" data-landing-follow="${teacher.id}" data-following="${teacher.isFollowing ? "1" : "0"}">${icons.bell}<span>${teacher.isFollowing ? "Obunadasiz" : "Obuna"}</span></button>`
+                              : `<a class="button primary" href="${routes.login}">Obuna bo'lish</a>`
+                          }
+                        </div>
+                      </article>
+                    `
+                  )
+                  .join("")}</div>`
+              : emptyState("Ustozlar hali yo'q", "Administrator o'qituvchilarni qo'shgach bu yerda ko'rinadi.")
+          }
         </section>
 
         <section id="courses" class="panel panel-pad landing-section">
           <div class="section-head">
             <div>
-              <h2 class="section-title">Asosiy yo'nalishlar</h2>
-              <p class="section-subtitle">Amaliy kurslar va natijaga yo'naltirilgan dasturlar</p>
+              <h2 class="section-title">Kurslar reytingi</h2>
+              <p class="section-subtitle">Eng ko'p foydalanuvchiga ega va eng ko'p to'lov qilingan kurslar</p>
             </div>
           </div>
-          <div class="landing-courses">
-            ${courses
-              .map(
-                (item) => `
-                  <article class="landing-course-card">
-                    <p>${escapeHtml(item)}</p>
-                    <span>Professional mentorlar bilan</span>
-                  </article>
-                `
-              )
-              .join("")}
+          <div class="landing-course-analytics">
+            <div>
+              <h3>Foydalanuvchi bo'yicha top</h3>
+              ${
+                courses.length
+                  ? `<div class="mini-card-list">${courses
+                      .slice(0, 6)
+                      .map(
+                        (item) => `
+                          <article class="mini-card">
+                            <div class="mini-card-top">
+                              <p class="mini-card-title">${escapeHtml(item.name || item.subject || "Kurs")}</p>
+                              <span class="mini-badge">${escapeHtml(String(item.memberCount || 0))} talaba</span>
+                            </div>
+                            <p class="mini-card-copy">${escapeHtml(item.subject || "Fan belgilanmagan")}</p>
+                            <p class="mini-card-copy">Narx: ${escapeHtml(formatMoney(item.coursePrice || 0))}</p>
+                            <p class="mini-card-copy">To'lov: ${escapeHtml(formatMoney(item.paidTotal || 0))}</p>
+                          </article>
+                        `
+                      )
+                      .join("")}</div>`
+                  : `<p class="muted-copy">Kurs statistikasi topilmadi.</p>`
+              }
+            </div>
+            <div>
+              <h3>To'lov bo'yicha top</h3>
+              ${
+                paidCourses.length
+                  ? `<div class="mini-card-list">${paidCourses
+                      .map(
+                        (item) => `
+                          <article class="mini-card">
+                            <div class="mini-card-top">
+                              <p class="mini-card-title">${escapeHtml(item.name || item.subject || "Kurs")}</p>
+                              <span class="mini-badge">${escapeHtml(formatMoney(item.paidTotal || 0))}</span>
+                            </div>
+                            <p class="mini-card-copy">Narx: ${escapeHtml(formatMoney(item.coursePrice || 0))}</p>
+                            <p class="mini-card-copy">${escapeHtml(String(item.paymentsCount || 0))} ta to'lov</p>
+                            <p class="mini-card-copy">${escapeHtml(String(item.memberCount || 0))} talaba</p>
+                          </article>
+                        `
+                      )
+                      .join("")}</div>`
+                  : `<p class="muted-copy">To'lov statistikasi topilmadi.</p>`
+              }
+            </div>
           </div>
         </section>
 
         <section class="panel panel-pad landing-section">
           <div class="section-head">
             <div>
-              <h2 class="section-title">Nima uchun Cliffs?</h2>
-              <p class="section-subtitle">Rasmiy, tartibli va natija beradigan o'quv jarayoni</p>
+              <h2 class="section-title">Video darslar</h2>
+              <p class="section-subtitle">Previewda video ishga tushmaydi, batafsil sahifaga o'tasiz</p>
+            </div>
+            <a class="button secondary" href="${routes.videos}">Barchasini ko'rish</a>
+          </div>
+          ${
+            videos.length
+              ? `<div class="landing-video-grid">${videos
+                  .map(
+                    (video) => `
+                      <article class="landing-video-card">
+                        <a class="landing-video-thumb-wrap" href="${videosHref(video.id)}">
+                          <img class="landing-video-thumb" src="${escapeHtml(video.youtubeThumbnail || site.heroImage || "")}" alt="${escapeHtml(video.title || "Video")}">
+                          <span class="landing-video-play">${icons.play}</span>
+                        </a>
+                        <div class="landing-video-copy">
+                          <p class="landing-video-title">${escapeHtml(video.title || "Video dars")}</p>
+                          <p class="landing-video-meta">${escapeHtml(video.teacher?.fullName || "Ustoz")} • ${escapeHtml(String(video.likesCount || 0))} like • ${escapeHtml(String(video.commentsCount || 0))} izoh</p>
+                          <div class="page-actions">
+                            <a class="button secondary" href="${videosHref(video.id)}">Batafsil</a>
+                            <a class="button secondary" href="${profileHref(video.teacher?.id || "")}">Profil</a>
+                          </div>
+                        </div>
+                      </article>
+                    `
+                  )
+                  .join("")}</div>`
+              : `<p class="muted-copy">Hozircha videodarslar joylanmagan.</p>`
+          }
+        </section>
+
+        <section class="panel panel-pad landing-section">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">Jonli efirlar</h2>
+              <p class="section-subtitle">Hozir efirda bo'lgan o'qituvchilarga qo'shiling</p>
             </div>
           </div>
-          <div class="landing-value-grid">
-            <article class="landing-value-card">
-              <p>Mentor nazorati</p>
-              <span>Har bir guruhga mas'ul o'qituvchi biriktiriladi, progress monitoring yuritiladi.</span>
-            </article>
-            <article class="landing-value-card">
-              <p>Davomat va intizom</p>
-              <span>Davomat, vazifa va reytinglar platforma orqali shaffof ko'rinadi.</span>
-            </article>
-            <article class="landing-value-card">
-              <p>Karyera yo'nalishi</p>
-              <span>Til va IT yo'nalishlarida amaliy portfel hamda real loyihalar ustida ish.</span>
-            </article>
-          </div>
+          ${
+            activeLives.length
+              ? `<div class="landing-live-grid">${activeLives
+                  .map(
+                    (session) => `
+                      <article class="landing-live-card">
+                        <div class="landing-live-top">
+                          <span class="landing-live-dot"></span>
+                          <span>LIVE</span>
+                        </div>
+                        <h3>${escapeHtml(session.title || "Jonli efir")}</h3>
+                        <p>${escapeHtml(session.teacher?.fullName || "Ustoz")}</p>
+                        <p>${escapeHtml(String(session.participantCount || 0))} ishtirokchi • ${escapeHtml(String(session.likesCount || 0))} like</p>
+                        <div class="page-actions">
+                          <a class="button primary" href="${liveHref(session.id)}">Efirga kirish</a>
+                          <a class="button secondary" href="${profileHref(session.teacher?.id || "")}">Profil</a>
+                        </div>
+                      </article>
+                    `
+                  )
+                  .join("")}</div>`
+              : `<p class="muted-copy">Hozircha jonli efir yo'q.</p>`
+          }
         </section>
 
         <section class="panel panel-pad landing-section">
           <div class="section-head">
             <div>
               <h2 class="section-title">Markaz hayoti</h2>
-              <p class="section-subtitle">Dars jarayonidan lavhalar</p>
+              <p class="section-subtitle">Galereya</p>
             </div>
           </div>
           <div class="landing-gallery">
@@ -858,7 +1218,7 @@
                     .map(
                       (url, index) => `
                         <figure class="landing-gallery-item">
-                          <img src="${escapeHtml(url)}" alt="Cliffs gallery ${index + 1}">
+                          <img src="${escapeHtml(url)}" alt="Gallery ${index + 1}">
                         </figure>
                       `
                     )
@@ -868,33 +1228,42 @@
           </div>
         </section>
 
-        <section class="panel panel-pad landing-section">
-          <div class="section-head">
+        <footer class="panel panel-pad landing-footer">
+          <div class="landing-footer-grid">
             <div>
-              <h2 class="section-title">Aloqa</h2>
-              <p class="section-subtitle">Ro'yxatdan o'tish va konsultatsiya uchun</p>
+              <h3>${escapeHtml(site.footerTitle || site.brandName || BRAND_DEFAULT)}</h3>
+              <p>${escapeHtml(site.footerDescription || "Ta'lim sifati va natija uchun ishlaymiz.")}</p>
+            </div>
+            <div>
+              <h4>Aloqa</h4>
+              <p>${site.phone ? `<a href="tel:${escapeHtml(site.phone)}">${escapeHtml(site.phone)}</a>` : "-"}</p>
+              <p>${site.telegram ? `<a href="${escapeHtml(site.telegram)}" target="_blank" rel="noopener noreferrer">Telegram</a>` : "-"}</p>
+              <p>${site.email ? `<a href="mailto:${escapeHtml(site.email)}">${escapeHtml(site.email)}</a>` : "-"}</p>
+              <p>${escapeHtml(site.address || "")}</p>
+              <p>${escapeHtml(site.workingHours || "")}</p>
             </div>
           </div>
-          <div class="landing-contact">
-            ${site.phone ? `<a class="button secondary" href="tel:${escapeHtml(site.phone)}">${escapeHtml(site.phone)}</a>` : ""}
-            ${site.telegram ? `<a class="button secondary" href="${escapeHtml(site.telegram)}" target="_blank" rel="noopener noreferrer">Telegram</a>` : ""}
-            <a class="button primary" href="${routes.login}">Kabinetga kirish</a>
-          </div>
-        </section>
-
-        <section class="panel panel-pad landing-cta">
-          <h2>${escapeHtml(brandName())} bilan bugun boshlang</h2>
-          <p>Qabul bo'yicha konsultatsiya oling va o'zingizga mos guruhga birikting.</p>
-          <div class="landing-contact">
-            ${site.phone ? `<a class="button secondary" href="tel:${escapeHtml(site.phone)}">Qo'ng'iroq</a>` : ""}
-            ${site.telegram ? `<a class="button secondary" href="${escapeHtml(site.telegram)}" target="_blank" rel="noopener noreferrer">Telegram</a>` : ""}
-            <a class="button primary" href="${routes.login}">Kabinetga kirish</a>
-          </div>
-        </section>
+          <p class="landing-footer-copy">${escapeHtml(site.footerCopyright || "© Cliffs")}</p>
+        </footer>
       </main>
       <div id="toast" class="toast"></div>
     `;
     bindThemeToggle();
+    document.querySelectorAll("[data-landing-follow]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const teacherId = button.dataset.landingFollow;
+        const isFollowingNow = button.dataset.following === "1";
+        button.disabled = true;
+        try {
+          await api(`/api/teachers/${teacherId}/follow`, { method: isFollowingNow ? "DELETE" : "POST" });
+          toast(isFollowingNow ? "Obuna bekor qilindi" : "Obuna bo'ldingiz", "success");
+          await renderLandingPage();
+        } catch (error) {
+          toast(error.message, "error");
+          button.disabled = false;
+        }
+      });
+    });
   }
 
   async function renderLoginPage() {
@@ -902,7 +1271,7 @@
       title: "Cliffs o'quv markazi boshqaruv tizimi.",
       subtitle: "Ingliz tili, rus tili, mobile dasturlash va boshqa kurslar uchun yagona platforma.",
       formTitle: "Login",
-      formSubtitle: "Admin bergan login yoki telefon orqali kiring.",
+      formSubtitle: "Tasdiqlangan akkaunt bilan tizimga kiring.",
       formContent: `
         <form id="login-form" class="auth-form">
           <div class="field">
@@ -914,7 +1283,7 @@
             <input class="input" id="login-password" name="password" type="password" placeholder="Parol" required>
           </div>
           <button class="button primary block" type="submit">${icons.chats}<span>Kirish</span></button>
-          <p class="auth-foot">Akkauntni admin yaratadi. Login ma'lumotlarini markaz administratoridan oling.</p>
+          <p class="auth-foot">Akkaunt yo'qmi? <a href="${routes.register}">Ro'yxatdan o'tish</a></p>
         </form>
       `,
     });
@@ -944,10 +1313,10 @@
 
   async function renderRegisterPage() {
     renderAuthLayout({
-      title: "Yangi chat maydonini bir necha daqiqada oching.",
-      subtitle: "Birinchi foydalanuvchi avtomatik admin bo'ladi va asosiy statistikani ko'radi.",
+      title: "Ro'yxatdan o'ting va admin tasdiqidan o'ting.",
+      subtitle: "Admin tekshiruvdan keyin tizimga kirish ruxsati ochiladi.",
       formTitle: "Register",
-      formSubtitle: "Minimal ma'lumot bilan akkaunt yarating.",
+      formSubtitle: "To'liq ma'lumot kiriting. Status: Pending -> Approved.",
       formContent: `
         <form id="register-form" class="auth-form">
           <div class="grid-2">
@@ -980,7 +1349,7 @@
       const button = event.currentTarget.querySelector("button");
       button.disabled = true;
       try {
-        const data = await api("/api/register", {
+        await api("/api/register", {
           method: "POST",
           body: {
             fullName: form.get("fullName"),
@@ -989,8 +1358,8 @@
             password: form.get("password"),
           },
         });
-        setToken(data.token);
-        window.location.replace(routes.dashboard);
+        toast("So'rov yuborildi. Admin tasdiqlagach kira olasiz.", "success");
+        window.setTimeout(() => window.location.replace(routes.login), 550);
       } catch (error) {
         toast(error.message, "error");
       } finally {
@@ -1178,15 +1547,37 @@
 
   async function renderGroupsPage() {
     clearPolling();
-    const [meData, groupsData, allGroupsData] = await Promise.all([loadMe(), api("/api/chats?scope=group"), api("/api/groups")]);
+    const meData = await loadMe();
+    const [groupsData, allGroupsData, teachersData, requestsData] = await Promise.all([
+      api("/api/chats?scope=group"),
+      api("/api/groups"),
+      api("/api/teachers"),
+      api("/api/group-join-requests/my").catch(() => ({ requests: [] })),
+    ]);
     const groups = groupsData.chats || [];
     const allGroups = allGroupsData.groups || [];
+    const teachers = teachersData.teachers || [];
+    const myRequests = requestsData.requests || [];
     const isTeacher = meData.user.role === "teacher";
     const isStudent = meData.user.role === "abituriyent";
+    const joinableGroups = allGroups.filter((group) => !group.isMember);
+
+    const requestByGroup = new Map();
+    for (const item of myRequests) {
+      if (!item?.group?.id) continue;
+      if (!requestByGroup.has(item.group.id)) requestByGroup.set(item.group.id, item);
+    }
+
+    const statusClass = (status) => {
+      const key = String(status || "").toLowerCase();
+      if (key === "approved") return "ok";
+      if (key === "rejected") return "danger";
+      return "warn";
+    };
 
     renderPage({
       title: "Guruhlar",
-      subtitle: "Admin tomonidan biriktirilgan kurs guruhlari.",
+      subtitle: "YouTube uslubida kurslar, ustozlar va qo'shilish so'rovlari.",
       actions: `
         ${actionButton("search", routes.search, "Qidiruv")}
         ${profileButton()}
@@ -1194,6 +1585,7 @@
       stats: `
         ${quickChip(meData.stats.group, "Mening guruhlarim")}
         ${quickChip(groups.filter((item) => item.subject).length, "Kurs guruhlari")}
+        ${quickChip(teachers.length, "Ustozlar")}
       `,
       content: `
         <section class="panel panel-pad stack">
@@ -1249,11 +1641,19 @@
                             <span class="time-tag">${escapeHtml(group.subject || "Fan")}</span>
                           </div>
                           <p class="conversation-preview">O'qituvchi: ${escapeHtml(group.teacher?.fullName || "-")}</p>
-                          <p class="conversation-preview">${group.isMember ? "Siz a'zosiz" : "Biriktirishni admin qiladi"}</p>
+                          <p class="conversation-preview">Kurs narxi: ${escapeHtml(formatMoney(group.coursePrice || 0))}</p>
+                          <p class="conversation-preview">${
+                            group.isMember
+                              ? "Siz a'zosiz"
+                              : requestByGroup.get(group.id)
+                                ? `So'rov: ${requestStatusLabel(requestByGroup.get(group.id).status)}`
+                                : "Qo'shilish uchun so'rov yuboring"
+                          }</p>
                         </div>
                       </a>
                       <div class="page-actions">
                         ${profileAction(group.teacher, "Ustoz profili")}
+                        ${isStudent && !group.isMember ? `<a class="button primary" href="${routes.payment}?groupId=${encodeURIComponent(group.id)}">To'lov + so'rov</a>` : ""}
                       </div>
                     </article>
                   `
@@ -1268,11 +1668,323 @@
           }
           ${
             isStudent
-              ? `<div class="empty-state"><h3>Abituriyent rejimi</h3><p>Davomat natijalarini guruh sahifasida ko'rasiz.</p></div>`
+              ? `
+                <section class="panel panel-pad stack">
+                  <div class="section-head">
+                    <div>
+                      <h2 class="section-title">Kursga qo'shilish va to'lov</h2>
+                      <p class="section-subtitle">Kursni tanlang va to'lov sahifasiga o'tib skrinshot bilan so'rov yuboring.</p>
+                    </div>
+                  </div>
+                  <form id="group-join-request-form" class="stack">
+                    <div class="field">
+                      <label for="gjr-group">Kurs guruhi</label>
+                      <select class="input" id="gjr-group" ${joinableGroups.length ? "" : "disabled"}>
+                        ${
+                          joinableGroups.length
+                            ? joinableGroups
+                                .map((group) => `<option value="${group.id}">${escapeHtml(group.name)}${group.subject ? ` • ${escapeHtml(group.subject)}` : ""}</option>`)
+                                .join("")
+                            : `<option value="">Qo'shiladigan guruh yo'q</option>`
+                        }
+                      </select>
+                    </div>
+                    <button class="button primary" type="submit" ${joinableGroups.length ? "" : "disabled"}>${icons.plus}<span>To'lov sahifasiga o'tish</span></button>
+                  </form>
+                  <div class="section-head">
+                    <div>
+                      <h2 class="section-title">Mening so'rovlarim</h2>
+                      <p class="section-subtitle">${myRequests.length} ta</p>
+                    </div>
+                  </div>
+                  ${
+                    myRequests.length
+                      ? `<div class="mini-card-list">${myRequests
+                          .map(
+                            (item) => `
+                              <article class="mini-card">
+                                <div class="mini-card-top">
+                                  <p class="mini-card-title">${escapeHtml(item.group?.name || "Guruh")}</p>
+                                  <span class="role-pill ${statusClass(item.status)}">${escapeHtml(requestStatusLabel(item.status))}</span>
+                                </div>
+                                <p class="mini-card-copy">${escapeHtml(item.group?.subject || "Fan ko'rsatilmagan")}</p>
+                                <div class="mini-card-meta">
+                                  <span>${escapeHtml(item.phone || "-")}</span>
+                                  <span>${escapeHtml(formatDate(item.createdAt))}</span>
+                                </div>
+                                <p class="mini-card-copy">To'lov: ${escapeHtml(formatMoney(item.paymentAmount || 0))} • Admin ulushi: ${escapeHtml(String(item.adminCommissionPercent || 10))}%</p>
+                                ${item.paymentScreenshotUrl ? `<div class="page-actions"><a class="button secondary" href="${escapeHtml(item.paymentScreenshotUrl)}" target="_blank" rel="noopener noreferrer">Skrinshot</a></div>` : ""}
+                                ${item.note ? `<p class="mini-card-copy">Sizning izoh: ${escapeHtml(item.note)}</p>` : ""}
+                                ${item.adminNote ? `<p class="mini-card-copy">Admin izohi: ${escapeHtml(item.adminNote)}</p>` : ""}
+                              </article>
+                            `
+                          )
+                          .join("")}</div>`
+                      : `<p class="muted-copy">Hozircha so'rov yubormagansiz.</p>`
+                  }
+                </section>
+              `
               : ""
           }
+          <section class="panel panel-pad stack">
+            <div class="section-head">
+              <div>
+                <h2 class="section-title">Ustozlar ijtimoiy bo'limi</h2>
+                <p class="section-subtitle">${teachers.length} ta o'qituvchi profiliga obuna bo'lish mumkin</p>
+              </div>
+            </div>
+            ${
+              teachers.length
+                ? `<div class="result-list">${teachers
+                    .map(
+                      (teacher) => `
+                        <article class="result-item">
+                          <a class="result-main result-link" href="${profileHref(teacher.id)}">
+                            ${avatar(teacher.fullName, teacher.avatar, "avatar large")}
+                            <div class="result-copy">
+                              <div class="result-top">
+                                <p class="result-name">${escapeHtml(teacher.fullName)}</p>
+                                <span class="subtle-tag">@${escapeHtml(teacher.username || "")}</span>
+                              </div>
+                              <p class="result-preview">${escapeHtml(teacher.bio || "Professional o'qituvchi")}</p>
+                              <p class="result-preview">${escapeHtml(String(teacher.followerCount || 0))} obunachi • ${escapeHtml(String(teacher.groupCount || 0))} guruh</p>
+                              ${
+                                Array.isArray(teacher.courses) && teacher.courses.length
+                                  ? `<p class="result-preview">${teacher.courses.slice(0, 3).map((item) => escapeHtml(item)).join(" • ")}</p>`
+                                  : ""
+                              }
+                            </div>
+                          </a>
+                          <div class="page-actions">
+                            ${
+                              teacher.id !== meData.user.id
+                                ? `<button class="button ${teacher.isFollowing ? "secondary" : "primary"}" data-follow-teacher="${teacher.id}" data-following="${teacher.isFollowing ? "1" : "0"}">
+                                    ${icons.bell}
+                                    <span>${teacher.isFollowing ? "Obunadasiz" : "Obuna"}</span>
+                                  </button>`
+                                : ""
+                            }
+                            ${
+                              teacher.id !== meData.user.id
+                                ? `<button class="button secondary icon-only" data-start-chat="${teacher.id}" title="Yozish">${icons.chats}<span>Yozish</span></button>`
+                                : `<a class="button secondary icon-only" href="${profileHref(teacher.id)}" title="Profil">${icons.profile}<span>Profil</span></a>`
+                            }
+                          </div>
+                        </article>
+                      `
+                    )
+                    .join("")}</div>`
+                : emptyState("Ustoz topilmadi", "Hozircha faol o'qituvchilar mavjud emas.")
+            }
+          </section>
         </section>
       `,
+    });
+
+    attachStartChatHandlers();
+    document.querySelectorAll("[data-follow-teacher]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        const teacherId = button.dataset.followTeacher;
+        const isFollowingNow = button.dataset.following === "1";
+        try {
+          await api(`/api/teachers/${teacherId}/follow`, { method: isFollowingNow ? "DELETE" : "POST" });
+          toast(isFollowingNow ? "Obuna bekor qilindi" : "Obuna bo'ldingiz", "success");
+          await renderGroupsPage();
+        } catch (error) {
+          toast(error.message, "error");
+          button.disabled = false;
+        }
+      });
+    });
+
+    document.getElementById("group-join-request-form")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const groupId = document.getElementById("gjr-group")?.value || "";
+      if (!groupId) return toast("Kurs guruhi tanlang", "error");
+      window.location.href = `${routes.payment}?groupId=${encodeURIComponent(groupId)}`;
+    });
+  }
+
+  async function renderPaymentPage() {
+    clearPolling();
+    const meData = await loadMe();
+    if (!isRole(meData?.user, "abituriyent")) {
+      renderPage({
+        title: "To'lov sahifasi",
+        subtitle: "Bu bo'lim abituriyentlar uchun",
+        actions: actionButton("groups", routes.groups, "Guruhlar"),
+        content: `<section class="panel panel-pad">${emptyState("Ruxsat yo'q", "Kursga qo'shilish to'lovi faqat abituriyent akkauntidan yuboriladi.")}</section>`,
+      });
+      return;
+    }
+
+    const [groupsData, requestsData, paymentData] = await Promise.all([
+      api("/api/groups"),
+      api("/api/group-join-requests/my").catch(() => ({ requests: [] })),
+      api("/api/public/payment-config").catch(() => ({ payment: {} })),
+    ]);
+    const allGroups = groupsData.groups || [];
+    const joinableGroups = allGroups.filter((group) => !group.isMember);
+    const requests = requestsData.requests || [];
+    const payment = paymentData.payment || {};
+    const requestedGroupId = queryParam("groupId");
+    const initialGroupId =
+      (requestedGroupId && joinableGroups.some((group) => group.id === requestedGroupId) ? requestedGroupId : "") ||
+      (joinableGroups[0]?.id || "");
+
+    const requestByGroup = new Map();
+    for (const item of requests) {
+      const key = item?.group?.id;
+      if (!key) continue;
+      if (!requestByGroup.has(key)) requestByGroup.set(key, item);
+    }
+
+    renderPage({
+      title: "Kurs to'lovi",
+      subtitle: "To'lov skrinshotini yuboring. Admin tekshiruvdan so'ng guruhga biriktiradi.",
+      actions: `
+        ${actionButton("groups", routes.groups, "Guruhlar")}
+        ${profileButton()}
+      `,
+      content: `
+        <section class="panel panel-pad stack">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">To'lov rekvizitlari</h2>
+              <p class="section-subtitle">Har bir tasdiqlangan to'lovdan ${escapeHtml(String(payment.adminCommissionPercent || 10))}% admin ulushi sifatida ajratiladi.</p>
+            </div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-card-top">
+              <p class="mini-card-title">Admin karta</p>
+              <span class="mini-badge">Manual transfer</span>
+            </div>
+            <p class="mini-card-copy">${escapeHtml(payment.adminCard || "-")}</p>
+            <div class="mini-card-meta">
+              <span>Egasining nomi: ${escapeHtml(payment.owner || "-")}</span>
+            </div>
+          </div>
+        </section>
+        <section class="panel panel-pad stack">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">So'rov yuborish</h2>
+              <p class="section-subtitle">Kursni tanlang, summani kiriting va chek skrinshotini yuklang.</p>
+            </div>
+          </div>
+          <form id="payment-request-form" class="stack">
+            <div class="field">
+              <label for="pay-group">Kurs guruhi</label>
+              <select class="input" id="pay-group" ${joinableGroups.length ? "" : "disabled"}>
+                ${
+                  joinableGroups.length
+                    ? joinableGroups
+                        .map(
+                          (group) =>
+                            `<option value="${group.id}" ${group.id === initialGroupId ? "selected" : ""}>${escapeHtml(group.name)}${group.subject ? ` • ${escapeHtml(group.subject)}` : ""}</option>`
+                        )
+                        .join("")
+                    : `<option value="">Qo'shiladigan guruh yo'q</option>`
+                }
+              </select>
+            </div>
+            <div id="pay-group-meta"></div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="pay-name">Ism familiya</label>
+                <input class="input" id="pay-name" value="${escapeHtml(meData.user.fullName || "")}" required>
+              </div>
+              <div class="field">
+                <label for="pay-phone">Telefon</label>
+                <input class="input" id="pay-phone" value="${escapeHtml(meData.user.phone || "")}" placeholder="+998..." required>
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="pay-amount">To'lov summasi (so'm)</label>
+                <input class="input" id="pay-amount" type="number" min="0" step="1000" required>
+              </div>
+              <div class="field">
+                <label for="pay-screenshot">To'lov skrinshoti</label>
+                <input class="input" id="pay-screenshot" type="file" accept="image/*" required>
+              </div>
+            </div>
+            <div class="field">
+              <label for="pay-note">Izoh</label>
+              <textarea class="textarea" id="pay-note" placeholder="To'lov va kurs bo'yicha izoh..."></textarea>
+            </div>
+            <label class="member-option">
+              <input type="checkbox" id="pay-consent" required>
+              <span>To'lov shartlari va admin ulushi (${escapeHtml(String(payment.adminCommissionPercent || 10))}%) bilan tanishdim.</span>
+            </label>
+            <button class="button primary" type="submit" ${joinableGroups.length ? "" : "disabled"}>${icons.plus}<span>So'rovni yuborish</span></button>
+          </form>
+        </section>
+      `,
+    });
+
+    const groupSelect = document.getElementById("pay-group");
+    const amountInput = document.getElementById("pay-amount");
+    const metaRoot = document.getElementById("pay-group-meta");
+
+    const refreshGroupMeta = () => {
+      const groupId = groupSelect?.value || "";
+      const selected = joinableGroups.find((item) => item.id === groupId) || null;
+      const request = requestByGroup.get(groupId) || null;
+      const suggested = Number(selected?.coursePrice || 0);
+      if (suggested > 0 && !amountInput.value) amountInput.value = String(suggested);
+      metaRoot.innerHTML = selected
+        ? `
+            <article class="mini-card">
+              <div class="mini-card-top">
+                <p class="mini-card-title">${escapeHtml(selected.name || "Kurs")}</p>
+                <span class="mini-badge">${escapeHtml(selected.subject || "Fan")}</span>
+              </div>
+              <p class="mini-card-copy">Kurs narxi: ${escapeHtml(formatMoney(selected.coursePrice || 0))}</p>
+              ${
+                request
+                  ? `<p class="mini-card-copy">Oldingi so'rov holati: <strong>${escapeHtml(requestStatusLabel(request.status))}</strong></p>`
+                  : `<p class="mini-card-copy">Bu kurs uchun yangi to'lov so'rovi yuborishingiz mumkin.</p>`
+              }
+            </article>
+          `
+        : `<p class="muted-copy">Kurs tanlang.</p>`;
+    };
+    groupSelect?.addEventListener("change", refreshGroupMeta);
+    refreshGroupMeta();
+
+    document.getElementById("payment-request-form")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = event.currentTarget.querySelector("button[type='submit']");
+      button.disabled = true;
+      try {
+        const groupId = document.getElementById("pay-group").value;
+        const selected = joinableGroups.find((item) => item.id === groupId);
+        if (!selected) throw new Error("Kurs guruhi tanlang");
+        const existing = requestByGroup.get(groupId);
+        if (existing?.status === "pending") throw new Error("Bu kurs uchun pending so'rov allaqachon yuborilgan");
+        const screenshotFile = document.getElementById("pay-screenshot").files?.[0] || null;
+        if (!screenshotFile) throw new Error("To'lov skrinshotini yuklang");
+        const uploaded = await uploadFile(screenshotFile, "payments");
+        await api("/api/group-join-requests", {
+          method: "POST",
+          body: {
+            groupId,
+            fullName: document.getElementById("pay-name").value,
+            phone: document.getElementById("pay-phone").value,
+            note: document.getElementById("pay-note").value,
+            paymentConsent: document.getElementById("pay-consent").checked,
+            paymentAmount: document.getElementById("pay-amount").value,
+            paymentScreenshotUrl: uploaded?.url || "",
+          },
+        });
+        toast("To'lov so'rovi yuborildi. Admin tasdiqlashini kuting.", "success");
+        window.location.replace(routes.groups);
+      } catch (error) {
+        toast(error.message, "error");
+        button.disabled = false;
+      }
     });
   }
 
@@ -1386,6 +2098,1055 @@
     });
   }
 
+  async function renderVideosPage() {
+    clearPolling();
+    const meData = await loadMeOptional();
+    const isGuest = !meData?.user;
+    const isTeacher = isRole(meData?.user, "teacher", "admin");
+    const isAdmin = isRole(meData?.user, "admin");
+    const initialQuery = queryParam("q");
+    const initialTeacherId = queryParam("teacherId");
+    const initialSort = queryParam("sort") || "trending";
+    const teachersData = await api(isGuest ? "/api/public/teachers" : "/api/teachers").catch(() => ({ teachers: [] }));
+    const teachers = teachersData.teachers || [];
+
+    renderPage({
+      title: "Videodarslar",
+      subtitle: "YouTube uslubidagi videolenta, live efirlar va ustozlar bo'yicha filtr.",
+      actions: `
+        ${isGuest ? `<a class="button secondary" href="${routes.login}">Kirish</a><a class="button primary" href="${routes.register}">Register</a>` : `${actionButton("search", routes.search, "Qidiruv")}${profileButton()}`}
+      `,
+      stats: `
+        ${quickChip(teachers.length, "Ustozlar")}
+        ${quickChip("HD", "Premium")}
+        ${quickChip("LIVE", "Jonli efir")}
+      `,
+      wide: true,
+      content: `
+        <section class="panel panel-pad stack">
+          <div class="grid-3 video-filter-grid">
+            <div class="field">
+              <label for="videos-q">Qidiruv</label>
+              <input class="input" id="videos-q" placeholder="Video nomi, teg, ustoz..." value="${escapeHtml(initialQuery)}">
+            </div>
+            <div class="field">
+              <label for="videos-sort">Saralash</label>
+              <select class="input" id="videos-sort">
+                <option value="trending" ${initialSort === "trending" ? "selected" : ""}>Trending</option>
+                <option value="new" ${initialSort === "new" ? "selected" : ""}>Yangi</option>
+                <option value="likes" ${initialSort === "likes" ? "selected" : ""}>Eng ko'p like</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="videos-teacher">O'qituvchi</label>
+              <select class="input" id="videos-teacher">
+                <option value="">Barcha ustozlar</option>
+                ${teachers.map((teacher) => `<option value="${teacher.id}" ${initialTeacherId === teacher.id ? "selected" : ""}>${escapeHtml(teacher.fullName)}</option>`).join("")}
+              </select>
+            </div>
+          </div>
+          <div class="page-actions">
+            <button class="button secondary" id="videos-run-filter">${icons.search}<span>Yangilash</span></button>
+            <a class="button secondary" href="${routes.videos}">Filtrni tozalash</a>
+          </div>
+        </section>
+
+        <section class="panel panel-pad stack">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">Faol jonli efirlar</h2>
+              <p class="section-subtitle" id="videos-live-count">0 ta</p>
+            </div>
+          </div>
+          <div id="videos-live-root"></div>
+        </section>
+
+        <section class="panel panel-pad stack">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">Video lentalar</h2>
+              <p class="section-subtitle" id="videos-list-count">0 ta</p>
+            </div>
+          </div>
+          <div id="videos-list-root"></div>
+        </section>
+
+        ${
+          isTeacher
+            ? `
+              <section class="panel panel-pad stack">
+                <div class="section-head">
+                  <div>
+                    <h2 class="section-title">Yangi videodars joylash</h2>
+                    <p class="section-subtitle">YouTube link kiritsangiz preview chiqadi, video sahifada ochiladi.</p>
+                  </div>
+                </div>
+                <form id="video-create-form" class="stack">
+                  <div class="grid-2">
+                    <div class="field"><label for="video-create-title">Sarlavha</label><input class="input" id="video-create-title" required></div>
+                    <div class="field"><label for="video-create-tags">Taglar</label><input class="input" id="video-create-tags" placeholder="ielts, grammar, speaking"></div>
+                  </div>
+                  <div class="field"><label for="video-create-link">YouTube havola</label><input class="input" id="video-create-link" placeholder="https://www.youtube.com/watch?v=..."></div>
+                  <div id="video-create-preview"></div>
+                  <div class="field"><label for="video-create-desc">Tavsif</label><textarea class="textarea" id="video-create-desc" required></textarea></div>
+                  ${
+                    isAdmin
+                      ? `
+                        <div class="field">
+                          <label for="video-create-teacher">O'qituvchi nomidan joylash</label>
+                          <select class="input" id="video-create-teacher">
+                            <option value="">Sizning profilingiz</option>
+                            ${teachers.map((teacher) => `<option value="${teacher.id}">${escapeHtml(teacher.fullName)}</option>`).join("")}
+                          </select>
+                        </div>
+                      `
+                      : ""
+                  }
+                  <button class="button primary" type="submit">${icons.play}<span>Videoni joylash</span></button>
+                </form>
+              </section>
+            `
+            : ""
+        }
+
+        ${
+          isTeacher
+            ? `
+              <section class="panel panel-pad stack">
+                <div class="section-head">
+                  <div>
+                    <h2 class="section-title">Jonli efir boshlash</h2>
+                    <p class="section-subtitle">Profil va landing sahifada LIVE belgisi avtomatik chiqadi.</p>
+                  </div>
+                </div>
+                <form id="live-start-form" class="stack">
+                  <div class="field"><label for="live-start-title">Efir nomi</label><input class="input" id="live-start-title" placeholder="IELTS speaking live"></div>
+                  <div class="field"><label for="live-start-desc">Qisqa tavsif</label><textarea class="textarea" id="live-start-desc" placeholder="Bugungi dars rejasi..."></textarea></div>
+                  <button class="button primary" type="submit">${icons.live}<span>Efirni boshlash</span></button>
+                </form>
+              </section>
+            `
+            : ""
+        }
+      `,
+    });
+
+    const queryInput = document.getElementById("videos-q");
+    const sortSelect = document.getElementById("videos-sort");
+    const teacherSelect = document.getElementById("videos-teacher");
+    const liveRoot = document.getElementById("videos-live-root");
+    const listRoot = document.getElementById("videos-list-root");
+    const listCount = document.getElementById("videos-list-count");
+    const liveCount = document.getElementById("videos-live-count");
+    let debounceTimer = 0;
+
+    async function runVideoLoad(pushHistory = false) {
+      const q = queryInput.value.trim();
+      const sort = sortSelect.value;
+      const teacherId = teacherSelect.value;
+      if (pushHistory) {
+        const next = new URL(window.location.href);
+        if (q) next.searchParams.set("q", q);
+        else next.searchParams.delete("q");
+        if (sort && sort !== "trending") next.searchParams.set("sort", sort);
+        else next.searchParams.delete("sort");
+        if (teacherId) next.searchParams.set("teacherId", teacherId);
+        else next.searchParams.delete("teacherId");
+        window.history.replaceState({}, "", next.toString());
+      }
+
+      const params = new URLSearchParams();
+      if (q) params.set("q", q);
+      if (sort) params.set("sort", sort);
+      if (teacherId) params.set("teacherId", teacherId);
+      const [videosData, liveData] = await Promise.all([
+        api(`${isGuest ? "/api/public/videos" : "/api/videos"}?${params.toString()}`),
+        api(isGuest ? "/api/public/live/active" : "/api/live/active"),
+      ]);
+      const videos = videosData.videos || [];
+      let lives = liveData.sessions || [];
+      if (teacherId) lives = lives.filter((session) => session.teacher?.id === teacherId);
+      if (q) {
+        const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+        lives = lives.filter((session) => rx.test(session.title || "") || rx.test(session.description || "") || rx.test(session.teacher?.fullName || ""));
+      }
+
+      listCount.textContent = `${videos.length} ta`;
+      liveCount.textContent = `${lives.length} ta`;
+      listRoot.innerHTML = videos.length
+        ? `<div class="video-grid">${videos
+            .map((item) => videoCard(item, false, state.site?.heroImage || "", !isGuest && (isAdmin || item.teacher?.id === state.me?.id)))
+            .join("")}</div>`
+        : emptyState("Videodars topilmadi", "Qidiruv yoki filtrni o'zgartirib ko'ring.");
+      liveRoot.innerHTML = lives.length
+        ? `<div class="live-card-grid">${lives.map((item) => liveCard(item, true)).join("")}</div>`
+        : `<p class="muted-copy">Hozircha faol jonli efir yo'q.</p>`;
+
+      document.querySelectorAll("[data-video-edit]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const video = videos.find((item) => item.id === button.dataset.videoEdit);
+          if (!video) return;
+          const title = window.prompt("Video sarlavha", video.title || "");
+          if (title === null) return;
+          const link = window.prompt("YouTube havola", video.youtubeWatchUrl || video.link || "");
+          if (link === null) return;
+          const description = window.prompt("Video tavsif", video.description || "");
+          if (description === null) return;
+          const tagsRaw = window.prompt("Taglar (vergul bilan)", (video.tags || []).join(", "));
+          if (tagsRaw === null) return;
+          button.disabled = true;
+          try {
+            await api(`/api/videos/${encodeURIComponent(video.id)}`, {
+              method: "PATCH",
+              body: {
+                title,
+                link,
+                description,
+                tags: String(tagsRaw || "")
+                  .split(/[,\n]/)
+                  .map((item) => item.trim())
+                  .filter(Boolean),
+              },
+            });
+            toast("Video yangilandi", "success");
+            await runVideoLoad(false);
+          } catch (error) {
+            toast(error.message, "error");
+            button.disabled = false;
+          }
+        });
+      });
+
+      document.querySelectorAll("[data-video-delete]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          if (!window.confirm("Videoni o'chirishni tasdiqlaysizmi?")) return;
+          button.disabled = true;
+          try {
+            await api(`/api/videos/${encodeURIComponent(button.dataset.videoDelete)}`, { method: "DELETE" });
+            toast("Video o'chirildi", "success");
+            await runVideoLoad(false);
+          } catch (error) {
+            toast(error.message, "error");
+            button.disabled = false;
+          }
+        });
+      });
+    }
+
+    document.getElementById("videos-run-filter").addEventListener("click", async () => {
+      try {
+        await runVideoLoad(true);
+      } catch (error) {
+        toast(error.message, "error");
+      }
+    });
+    queryInput.addEventListener("input", () => {
+      window.clearTimeout(debounceTimer);
+      debounceTimer = window.setTimeout(() => {
+        runVideoLoad(true).catch((error) => toast(error.message, "error"));
+      }, 260);
+    });
+    sortSelect.addEventListener("change", () => runVideoLoad(true).catch((error) => toast(error.message, "error")));
+    teacherSelect.addEventListener("change", () => runVideoLoad(true).catch((error) => toast(error.message, "error")));
+
+    const createLinkInput = document.getElementById("video-create-link");
+    const createPreview = document.getElementById("video-create-preview");
+    const paintPreview = () => {
+      if (!createPreview) return;
+      const meta = youtubeMeta(createLinkInput?.value || "");
+      createPreview.innerHTML = meta
+        ? `
+          <div class="video-preview-lite">
+              ${meta.thumb ? `<img src="${escapeHtml(meta.thumb)}" alt="YouTube preview">` : ""}
+              <div>
+                <p class="result-name">YouTube preview</p>
+                <p class="result-preview">Logo minimal ko'rinish uchun youtube-nocookie ishlatiladi.</p>
+              </div>
+            </div>
+        `
+        : "";
+    };
+    createLinkInput?.addEventListener("input", paintPreview);
+    paintPreview();
+
+    document.getElementById("video-create-form")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget instanceof HTMLFormElement ? event.currentTarget : document.getElementById("video-create-form");
+      if (!form) return;
+      const button = form.querySelector("button[type='submit']");
+      if (button) button.disabled = true;
+      try {
+        const tags = String(document.getElementById("video-create-tags").value || "")
+          .split(/[,\n]/)
+          .map((item) => item.trim())
+          .filter(Boolean);
+        await api("/api/videos", {
+          method: "POST",
+          body: {
+            title: document.getElementById("video-create-title").value,
+            description: document.getElementById("video-create-desc").value,
+            link: document.getElementById("video-create-link").value,
+            tags,
+            teacherId: document.getElementById("video-create-teacher")?.value || "",
+          },
+        });
+        toast("Videodars joylandi", "success");
+        if (typeof form.reset === "function") form.reset();
+        paintPreview();
+        await runVideoLoad(false);
+      } catch (error) {
+        toast(error.message, "error");
+      } finally {
+        if (button) button.disabled = false;
+      }
+    });
+
+    document.getElementById("live-start-form")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = event.currentTarget.querySelector("button[type='submit']");
+      button.disabled = true;
+      try {
+        const data = await api("/api/live/start", {
+          method: "POST",
+          body: {
+            title: document.getElementById("live-start-title").value,
+            description: document.getElementById("live-start-desc").value,
+          },
+        });
+        toast("Jonli efir boshlandi", "success");
+        if (data.session?.id) {
+          window.location.href = liveHref(data.session.id);
+          return;
+        }
+      } catch (error) {
+        toast(error.message, "error");
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    await runVideoLoad(false);
+  }
+
+  async function renderVideoLessonPage(videoId, options = {}) {
+    const isGuest = !!options.isGuest;
+    const data = await api(`${isGuest ? "/api/public/videos/" : "/api/videos/"}${encodeURIComponent(videoId)}`);
+    const video = data.video;
+    const comments = data.comments || [];
+    if (!video) throw new Error("Video topilmadi");
+    const canWatch = !isGuest;
+    const preview = video.hasYoutubeVideo
+      ? {
+          id: video.youtubeId,
+          embed: video.youtubeEmbedUrl,
+          watch: video.youtubeWatchUrl || video.link,
+          thumb: video.youtubeThumbnail,
+        }
+      : youtubeMeta(video.link || "");
+    const canManageVideo = !isGuest && (isRole(state.me, "admin") || video.teacher?.id === state.me?.id);
+
+    renderPage({
+      title: video.title || "Video dars",
+      subtitle: "Batafsil sahifa: fullscreen ko'rish, like va izohlar.",
+      actions: `
+        ${actionButton("back", routes.videos, "Videolarga qaytish")}
+        ${isGuest ? `<a class="button secondary" href="${routes.login}">Kirish</a>` : profileButton()}
+      `,
+      content: `
+        <section class="panel panel-pad stack">
+          <div class="video-detail-layout">
+            <article class="video-main-card">
+              ${
+                preview && canWatch
+                  ? youtubeEmbedCard(preview)
+                  : `<div class="empty-state"><h3>${preview ? "Video yopiq" : "Preview yo'q"}</h3><p>${
+                      preview ? "Videoni ko'rish uchun akkauntga kiring." : "YouTube havola qo'shilmagan."
+                    }</p>${preview && isGuest ? `<div class="page-actions"><a class="button primary" href="${routes.login}">Kirish</a><a class="button secondary" href="${routes.register}">Register</a></div>` : ""}</div>`
+              }
+              <h2>${escapeHtml(video.title || "Video dars")}</h2>
+              <p class="muted-copy">${escapeHtml(video.description || "")}</p>
+              <div class="video-detail-meta">
+                <a class="inline-link" href="${profileHref(video.teacher?.id || "")}">${escapeHtml(video.teacher?.fullName || "Ustoz")}</a>
+                <span>${escapeHtml(formatDate(video.createdAt))}</span>
+                <span id="video-like-count">${escapeHtml(String(video.likesCount || 0))} like</span>
+                <span id="video-comment-count">${escapeHtml(String(video.commentsCount || 0))} izoh</span>
+              </div>
+              <div class="page-actions">
+                ${
+                  isGuest
+                    ? `<a class="button primary" href="${routes.login}">Kirish qilib davom etish</a>`
+                    : `<button class="button ${video.isLiked ? "secondary" : "primary"}" id="video-like-btn" data-liked="${video.isLiked ? "1" : "0"}">${icons.like}<span>${video.isLiked ? "Like bosilgan" : "Like bosish"}</span></button>`
+                }
+                ${preview?.watch && canWatch ? `<a class="button secondary" href="${escapeHtml(preview.watch)}" target="_blank" rel="noopener noreferrer">YouTube'da ochish</a>` : ""}
+                <a class="button secondary" href="${profileHref(video.teacher?.id || "")}">Ustoz profili</a>
+                ${
+                  canManageVideo
+                    ? `
+                      <button class="button secondary" id="video-edit-btn">${icons.edit}<span>Edit</span></button>
+                      <button class="button danger" id="video-delete-btn">${icons.trash}<span>Delete</span></button>
+                    `
+                    : ""
+                }
+              </div>
+            </article>
+            <aside class="video-side-card">
+              <h3>Izohlar</h3>
+              ${
+                isGuest
+                  ? `<p class="muted-copy">Izoh qoldirish uchun login qiling.</p>`
+                  : `
+                    <form id="video-comment-form" class="stack">
+                      <div class="field">
+                        <label for="video-comment-text">Izoh yozing</label>
+                        <textarea class="textarea" id="video-comment-text" placeholder="Fikringizni yozing..." required></textarea>
+                      </div>
+                      <button class="button primary" type="submit">${icons.send}<span>Yuborish</span></button>
+                    </form>
+                  `
+              }
+              <div class="video-comment-list" id="video-comment-list">
+                ${
+                  comments.length
+                    ? comments
+                        .map(
+                          (item) => `
+                            <article class="mini-card">
+                              <div class="mini-card-top">
+                                <p class="mini-card-title">${escapeHtml(item.user?.fullName || "Foydalanuvchi")}</p>
+                                <span class="mini-badge">${escapeHtml(formatDate(item.createdAt))}</span>
+                              </div>
+                              <p class="mini-card-copy">${escapeHtml(item.text || "")}</p>
+                            </article>
+                          `
+                        )
+                        .join("")
+                    : `<p class="muted-copy">Hozircha izoh yo'q.</p>`
+                }
+              </div>
+            </aside>
+          </div>
+        </section>
+      `,
+      wide: true,
+    });
+
+    document.getElementById("video-like-btn")?.addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      try {
+        const result = await api(`/api/videos/${encodeURIComponent(videoId)}/like`, { method: "POST" });
+        document.getElementById("video-like-count").textContent = `${result.likesCount || 0} like`;
+        button.dataset.liked = result.isLiked ? "1" : "0";
+        button.classList.toggle("primary", !result.isLiked);
+        button.classList.toggle("secondary", !!result.isLiked);
+        button.innerHTML = `${icons.like}<span>${result.isLiked ? "Like bosilgan" : "Like bosish"}</span>`;
+      } catch (error) {
+        toast(error.message, "error");
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    document.getElementById("video-comment-form")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = event.currentTarget.querySelector("button[type='submit']");
+      button.disabled = true;
+      const input = document.getElementById("video-comment-text");
+      try {
+        const response = await api(`/api/videos/${encodeURIComponent(videoId)}/comments`, {
+          method: "POST",
+          body: { text: input.value },
+        });
+        input.value = "";
+        toast("Izoh qo'shildi", "success");
+        document.getElementById("video-comment-count").textContent = `${response.commentsCount || 0} izoh`;
+        await renderVideoLessonPage(videoId);
+      } catch (error) {
+        toast(error.message, "error");
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    document.getElementById("video-edit-btn")?.addEventListener("click", async () => {
+      const title = window.prompt("Video sarlavha", video.title || "");
+      if (title === null) return;
+      const link = window.prompt("YouTube havola", video.youtubeWatchUrl || video.link || "");
+      if (link === null) return;
+      const description = window.prompt("Video tavsif", video.description || "");
+      if (description === null) return;
+      const tagsRaw = window.prompt("Taglar (vergul bilan)", (video.tags || []).join(", "));
+      if (tagsRaw === null) return;
+      try {
+        await api(`/api/videos/${encodeURIComponent(video.id)}`, {
+          method: "PATCH",
+          body: {
+            title,
+            link,
+            description,
+            tags: String(tagsRaw || "")
+              .split(/[,\n]/)
+              .map((item) => item.trim())
+              .filter(Boolean),
+          },
+        });
+        toast("Video yangilandi", "success");
+        await renderVideoLessonPage(video.id);
+      } catch (error) {
+        toast(error.message, "error");
+      }
+    });
+
+    document.getElementById("video-delete-btn")?.addEventListener("click", async () => {
+      if (!window.confirm("Videoni o'chirishni tasdiqlaysizmi?")) return;
+      try {
+        await api(`/api/videos/${encodeURIComponent(video.id)}`, { method: "DELETE" });
+        toast("Video o'chirildi", "success");
+        window.location.replace(routes.videos);
+      } catch (error) {
+        toast(error.message, "error");
+      }
+    });
+  }
+
+  async function renderLiveSessionPage(sessionId) {
+    let detail;
+    try {
+      detail = await api(`/api/live/${encodeURIComponent(sessionId)}`);
+    } catch (error) {
+      toast(error.message, "error");
+      window.location.replace(routes.videos);
+      return;
+    }
+    let currentSession = detail.session;
+    let comments = detail.comments || [];
+    if (!currentSession) {
+      toast("Jonli efir topilmadi", "error");
+      window.location.replace(routes.videos);
+      return;
+    }
+
+    let joined = false;
+    let localStream = null;
+    let audioEnabled = true;
+    let videoEnabled = true;
+    let pollBusy = false;
+    const peerMap = new Map();
+    const remoteStreams = new Map();
+    const queuedCandidates = new Map();
+
+    function commentListMarkup() {
+      if (!comments.length) return `<p class="muted-copy">Hozircha izohlar yo'q.</p>`;
+      return comments
+        .map(
+          (item) => `
+            <article class="mini-card">
+              <div class="mini-card-top">
+                <p class="mini-card-title">${escapeHtml(item.user?.fullName || "Foydalanuvchi")}</p>
+                <span class="mini-badge">${escapeHtml(formatTime(item.createdAt))}</span>
+              </div>
+              <p class="mini-card-copy">${escapeHtml(item.text || "")}</p>
+            </article>
+          `
+        )
+        .join("");
+    }
+
+    function renderShell() {
+      renderPage({
+        title: currentSession.title || "Jonli efir",
+        subtitle: "Ko'p ishtirokchili jonli dars, like va izohlar bilan.",
+        actions: `
+          ${actionButton("back", routes.videos, "Videolarga qaytish")}
+          ${profileButton()}
+        `,
+        wide: true,
+        stats: `
+          ${quickChip(currentSession.participantCount || 0, "Ishtirokchi")}
+          ${quickChip(currentSession.likesCount || 0, "Like")}
+          ${quickChip(currentSession.commentsCount || 0, "Izoh")}
+        `,
+        content: `
+          <section class="panel panel-pad stack">
+            <div class="live-shell">
+              <div class="live-stream-area">
+                <div class="live-grid" id="live-grid"></div>
+                <div class="live-empty" id="live-empty">Signal kutilyapti...</div>
+              </div>
+              <aside class="live-side">
+                <div class="mini-card">
+                  <div class="mini-card-top">
+                    <p class="mini-card-title">${escapeHtml(currentSession.title || "Jonli efir")}</p>
+                    <span class="role-pill warn">LIVE</span>
+                  </div>
+                  <p class="mini-card-copy">${escapeHtml(currentSession.description || "")}</p>
+                  <p class="mini-card-copy">Ustoz: <a class="inline-link" href="${profileHref(currentSession.teacher?.id || "")}">${escapeHtml(currentSession.teacher?.fullName || "Ustoz")}</a></p>
+                  <div class="live-control-row">
+                    <button class="button ${joined ? "secondary" : "primary"}" id="live-join-btn">${icons.live}<span>${joined ? "Ulangan" : "Efirga ulanish"}</span></button>
+                    <button class="button secondary" id="live-leave-btn">${icons.close}<span>Chiqish</span></button>
+                    <button class="button secondary" id="live-audio-btn">${audioEnabled ? icons.mic : icons.micOff}<span>Mic</span></button>
+                    <button class="button secondary" id="live-video-btn">${videoEnabled ? icons.video : icons.videoOff}<span>Video</span></button>
+                    <button class="button ${currentSession.isLiked ? "secondary" : "primary"}" id="live-like-btn">${icons.like}<span>${currentSession.isLiked ? "Like bosilgan" : "Like bosish"}</span></button>
+                    ${
+                      state.me?.id === currentSession.teacher?.id || isRole(state.me, "admin")
+                        ? `<button class="button danger" id="live-stop-btn">${icons.videoOff}<span>Efirni to'xtatish</span></button>`
+                        : ""
+                    }
+                  </div>
+                </div>
+                <form id="live-comment-form" class="stack">
+                  <div class="field">
+                    <label for="live-comment-text">Izoh</label>
+                    <textarea class="textarea" id="live-comment-text" placeholder="Jonli efir haqida yozing..."></textarea>
+                  </div>
+                  <button class="button primary" type="submit">${icons.send}<span>Yuborish</span></button>
+                </form>
+                <div class="video-comment-list" id="live-comment-list">${commentListMarkup()}</div>
+              </aside>
+            </div>
+          </section>
+        `,
+      });
+    }
+
+    function updateControlStates() {
+      const audioButton = document.getElementById("live-audio-btn");
+      const videoButton = document.getElementById("live-video-btn");
+      const joinButton = document.getElementById("live-join-btn");
+      if (audioButton) {
+        audioButton.innerHTML = `${audioEnabled ? icons.mic : icons.micOff}<span>Mic</span>`;
+      }
+      if (videoButton) {
+        videoButton.innerHTML = `${videoEnabled ? icons.video : icons.videoOff}<span>Video</span>`;
+      }
+      if (joinButton) {
+        joinButton.classList.toggle("primary", !joined);
+        joinButton.classList.toggle("secondary", joined);
+        joinButton.innerHTML = `${icons.live}<span>${joined ? "Ulangan" : "Efirga ulanish"}</span>`;
+      }
+    }
+
+    function tileMarkup(user, isLocal = false) {
+      return `
+        <article class="live-tile ${isLocal ? "local" : ""}" data-user-id="${escapeHtml(user.id)}">
+          <video autoplay playsinline ${isLocal ? "muted" : ""}></video>
+          <span class="live-tag">${escapeHtml(isLocal ? "Siz" : user.fullName || user.username || "User")}</span>
+        </article>
+      `;
+    }
+
+    function ensureTile(user, isLocal = false) {
+      const root = document.getElementById("live-grid");
+      let tile = root.querySelector(`[data-user-id="${CSS.escape(user.id)}"]`);
+      if (!tile) {
+        root.insertAdjacentHTML("beforeend", tileMarkup(user, isLocal));
+        tile = root.querySelector(`[data-user-id="${CSS.escape(user.id)}"]`);
+      }
+      tile.classList.toggle("local", isLocal);
+      tile.querySelector(".live-tag").textContent = isLocal ? "Siz" : user.fullName || user.username || "User";
+      return tile.querySelector("video");
+    }
+
+    function removeTile(userId) {
+      const root = document.getElementById("live-grid");
+      root.querySelector(`[data-user-id="${CSS.escape(userId)}"]`)?.remove();
+    }
+
+    function applyStream(videoNode, stream) {
+      if (!videoNode || !stream) return;
+      if (videoNode.srcObject !== stream) videoNode.srcObject = stream;
+      videoNode.play().catch(() => {});
+    }
+
+    function syncEmptyState() {
+      const root = document.getElementById("live-grid");
+      const hasTiles = !!root.querySelector("[data-user-id]");
+      document.getElementById("live-empty").classList.toggle("hide", hasTiles);
+    }
+
+    function renderTiles() {
+      const allowedIds = new Set();
+      if (localStream && state.me) {
+        allowedIds.add(state.me.id);
+        applyStream(ensureTile(state.me, true), localStream);
+      } else if (state.me) {
+        removeTile(state.me.id);
+      }
+      for (const participant of currentSession.participants || []) {
+        if (!participant || participant.id === state.me.id) continue;
+        allowedIds.add(participant.id);
+        const remote = remoteStreams.get(participant.id);
+        const video = ensureTile(participant, false);
+        if (remote) applyStream(video, remote);
+      }
+      document.querySelectorAll("#live-grid [data-user-id]").forEach((node) => {
+        if (!allowedIds.has(node.dataset.userId)) node.remove();
+      });
+      syncEmptyState();
+    }
+
+    function queueCandidate(userId, candidate) {
+      const list = queuedCandidates.get(userId) || [];
+      list.push(candidate);
+      queuedCandidates.set(userId, list);
+    }
+
+    async function flushCandidates(userId) {
+      const entry = peerMap.get(userId);
+      const list = queuedCandidates.get(userId) || [];
+      if (!entry || !entry.pc.remoteDescription || !list.length) return;
+      while (list.length) {
+        const candidate = list.shift();
+        try {
+          await entry.pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch {}
+      }
+      if (!list.length) queuedCandidates.delete(userId);
+    }
+
+    async function sendSignal(toUserId, type, data) {
+      await api(`/api/live/${encodeURIComponent(currentSession.id)}/signal`, {
+        method: "POST",
+        body: { toUserId, type, data },
+      });
+    }
+
+    async function createPeer(participant, initiate = false) {
+      if (peerMap.has(participant.id)) return peerMap.get(participant.id);
+      const config = await api("/api/video/config");
+      const pc = new RTCPeerConnection({ iceServers: config.iceServers || [] });
+      const remote = new MediaStream();
+      remoteStreams.set(participant.id, remote);
+      const entry = { pc, participant, initiated: false };
+      peerMap.set(participant.id, entry);
+
+      if (localStream) {
+        for (const track of localStream.getTracks()) {
+          pc.addTrack(track, localStream);
+        }
+      } else {
+        pc.addTransceiver("video", { direction: "recvonly" });
+        pc.addTransceiver("audio", { direction: "recvonly" });
+      }
+
+      pc.ontrack = (event) => {
+        for (const track of event.streams[0]?.getTracks?.() || []) {
+          const exists = remote.getTracks().some((item) => item.id === track.id);
+          if (!exists) remote.addTrack(track);
+        }
+        renderTiles();
+      };
+      pc.onicecandidate = (event) => {
+        if (event.candidate && currentSession?.id) {
+          sendSignal(participant.id, "candidate", event.candidate.toJSON ? event.candidate.toJSON() : event.candidate).catch(() => {});
+        }
+      };
+      pc.onconnectionstatechange = () => {
+        if (["failed", "closed", "disconnected"].includes(pc.connectionState)) {
+          pc.close();
+          peerMap.delete(participant.id);
+          remoteStreams.delete(participant.id);
+          queuedCandidates.delete(participant.id);
+          removeTile(participant.id);
+          syncEmptyState();
+        }
+      };
+
+      await flushCandidates(participant.id);
+      if (initiate && !entry.initiated && currentSession?.id) {
+        entry.initiated = true;
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await sendSignal(participant.id, "offer", pc.localDescription);
+      }
+      return entry;
+    }
+
+    async function handleSignal(signal) {
+      if (!currentSession || signal.fromUserId === state.me.id) return;
+      const participant =
+        (currentSession.participants || []).find((item) => item.id === signal.fromUserId) || {
+          id: signal.fromUserId,
+          fullName: "User",
+          username: "",
+        };
+
+      if (signal.type === "candidate") {
+        const entry = peerMap.get(signal.fromUserId);
+        if (!entry || !entry.pc.remoteDescription) {
+          queueCandidate(signal.fromUserId, signal.data);
+          return;
+        }
+        await entry.pc.addIceCandidate(new RTCIceCandidate(signal.data));
+        return;
+      }
+
+      const entry = await createPeer(participant, false);
+      if (signal.type === "offer") {
+        await entry.pc.setRemoteDescription(new RTCSessionDescription(signal.data));
+        await flushCandidates(signal.fromUserId);
+        const answer = await entry.pc.createAnswer();
+        await entry.pc.setLocalDescription(answer);
+        await sendSignal(signal.fromUserId, "answer", entry.pc.localDescription);
+      }
+      if (signal.type === "answer") {
+        await entry.pc.setRemoteDescription(new RTCSessionDescription(signal.data));
+        await flushCandidates(signal.fromUserId);
+      }
+    }
+
+    async function syncPeers() {
+      if (!currentSession) return;
+      const remoteIds = new Set();
+      for (const participant of currentSession.participants || []) {
+        if (!participant || participant.id === state.me.id) continue;
+        remoteIds.add(participant.id);
+        const shouldInitiate = state.me.id < participant.id;
+        await createPeer(participant, shouldInitiate);
+      }
+      for (const [userId, entry] of peerMap.entries()) {
+        if (!remoteIds.has(userId)) {
+          entry.pc.close();
+          peerMap.delete(userId);
+          remoteStreams.delete(userId);
+          queuedCandidates.delete(userId);
+          removeTile(userId);
+        }
+      }
+      renderTiles();
+    }
+
+    async function ensureLocalMedia() {
+      if (localStream) return localStream;
+      if (!navigator.mediaDevices?.getUserMedia || !window.RTCPeerConnection) {
+        throw new Error("Brauzer jonli efirni qo'llamaydi");
+      }
+      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      audioEnabled = true;
+      videoEnabled = true;
+      updateControlStates();
+      renderTiles();
+      for (const [userId, entry] of peerMap.entries()) {
+        const existingKinds = new Set(entry.pc.getSenders().map((sender) => sender.track?.kind).filter(Boolean));
+        for (const track of localStream.getTracks()) {
+          if (!existingKinds.has(track.kind)) {
+            entry.pc.addTrack(track, localStream);
+          }
+        }
+        try {
+          const offer = await entry.pc.createOffer();
+          await entry.pc.setLocalDescription(offer);
+          await sendSignal(userId, "offer", entry.pc.localDescription);
+        } catch {}
+      }
+      await syncPeers();
+      return localStream;
+    }
+
+    function stopLocalMedia() {
+      for (const track of localStream?.getTracks?.() || []) track.stop();
+      localStream = null;
+      if (state.me?.id) removeTile(state.me.id);
+      updateControlStates();
+      syncEmptyState();
+    }
+
+    function teardownPeers() {
+      for (const [userId, entry] of peerMap.entries()) {
+        entry.pc.close();
+        peerMap.delete(userId);
+        remoteStreams.delete(userId);
+        queuedCandidates.delete(userId);
+        removeTile(userId);
+      }
+    }
+
+    async function pollLive() {
+      if (!joined || !currentSession?.id || pollBusy) return;
+      pollBusy = true;
+      try {
+        const data = await api(`/api/live/${encodeURIComponent(currentSession.id)}/poll`);
+        currentSession = data.session || null;
+        comments = data.comments || [];
+        if (!currentSession) {
+          toast("Jonli efir tugadi");
+          await leaveSession(true);
+          window.location.replace(routes.videos);
+          return;
+        }
+        document.getElementById("live-comment-list").innerHTML = commentListMarkup();
+        for (const signal of data.signals || []) {
+          await handleSignal(signal);
+        }
+        await syncPeers();
+      } catch (error) {
+        if (!String(error.message || "").includes("tugagan")) {
+          toast(error.message, "error");
+        }
+      } finally {
+        pollBusy = false;
+      }
+    }
+
+    async function joinSession(silent = false) {
+      if (joined || !currentSession?.id) return;
+      try {
+        const data = await api(`/api/live/${encodeURIComponent(currentSession.id)}/join`, { method: "POST" });
+        currentSession = data.session || currentSession;
+        joined = true;
+        updateControlStates();
+        window.clearInterval(state.callTimer);
+        state.callTimer = window.setInterval(() => {
+          pollLive().catch(() => {});
+        }, 1100);
+        await pollLive();
+        if (!silent) toast("Jonli efirga ulanding", "success");
+      } catch (error) {
+        toast(error.message, "error");
+      }
+    }
+
+    async function leaveSession(silent = false) {
+      window.clearInterval(state.callTimer);
+      state.callTimer = 0;
+      try {
+        if (joined && currentSession?.id) {
+          await api(`/api/live/${encodeURIComponent(currentSession.id)}/leave`, { method: "POST" });
+        }
+      } catch (error) {
+        if (!silent) toast(error.message, "error");
+      } finally {
+        joined = false;
+        teardownPeers();
+        stopLocalMedia();
+        updateControlStates();
+      }
+    }
+
+    function leaveKeepAlive() {
+      if (!joined || !currentSession?.id) return;
+      const headers = new Headers({ "Content-Type": "application/json" });
+      if (state.token) headers.set("Authorization", `Bearer ${state.token}`);
+      fetch(`/api/live/${currentSession.id}/leave`, {
+        method: "POST",
+        headers,
+        body: "{}",
+        keepalive: true,
+      }).catch(() => {});
+    }
+
+    renderShell();
+    updateControlStates();
+    renderTiles();
+
+    document.getElementById("live-join-btn")?.addEventListener("click", async () => {
+      await joinSession();
+    });
+    document.getElementById("live-leave-btn")?.addEventListener("click", async () => {
+      await leaveSession();
+      window.location.replace(routes.videos);
+    });
+    document.getElementById("live-audio-btn")?.addEventListener("click", async () => {
+      if (!localStream) {
+        try {
+          await ensureLocalMedia();
+        } catch (error) {
+          toast(error.message, "error");
+          return;
+        }
+      }
+      audioEnabled = !audioEnabled;
+      for (const track of localStream?.getAudioTracks?.() || []) track.enabled = audioEnabled;
+      updateControlStates();
+    });
+    document.getElementById("live-video-btn")?.addEventListener("click", async () => {
+      if (!localStream) {
+        try {
+          await ensureLocalMedia();
+        } catch (error) {
+          toast(error.message, "error");
+          return;
+        }
+      }
+      videoEnabled = !videoEnabled;
+      for (const track of localStream?.getVideoTracks?.() || []) track.enabled = videoEnabled;
+      updateControlStates();
+    });
+    document.getElementById("live-like-btn")?.addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      try {
+        const result = await api(`/api/live/${encodeURIComponent(currentSession.id)}/like`, { method: "POST" });
+        currentSession.isLiked = !!result.isLiked;
+        currentSession.likesCount = Number(result.likesCount || 0);
+        button.classList.toggle("primary", !currentSession.isLiked);
+        button.classList.toggle("secondary", currentSession.isLiked);
+        button.innerHTML = `${icons.like}<span>${currentSession.isLiked ? "Like bosilgan" : "Like bosish"}</span>`;
+      } catch (error) {
+        toast(error.message, "error");
+      } finally {
+        button.disabled = false;
+      }
+    });
+    document.getElementById("live-stop-btn")?.addEventListener("click", async () => {
+      if (!window.confirm("Jonli efir to'xtatilsinmi?")) return;
+      try {
+        await api(`/api/live/${encodeURIComponent(currentSession.id)}/stop`, { method: "POST" });
+        toast("Jonli efir to'xtatildi", "success");
+        await leaveSession(true);
+        window.location.replace(routes.videos);
+      } catch (error) {
+        toast(error.message, "error");
+      }
+    });
+    document.getElementById("live-comment-form")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = event.currentTarget.querySelector("button[type='submit']");
+      const input = document.getElementById("live-comment-text");
+      button.disabled = true;
+      try {
+        const response = await api(`/api/live/${encodeURIComponent(currentSession.id)}/comments`, {
+          method: "POST",
+          body: { text: input.value },
+        });
+        if (response.comment) comments.unshift(response.comment);
+        if (comments.length > 80) comments = comments.slice(0, 80);
+        currentSession.commentsCount = Number(response.commentsCount || comments.length);
+        input.value = "";
+        document.getElementById("live-comment-list").innerHTML = commentListMarkup();
+      } catch (error) {
+        toast(error.message, "error");
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    window.addEventListener("pagehide", leaveKeepAlive, { once: true });
+    await joinSession(true);
+  }
+
+  async function renderVideoDetailPage() {
+    clearPolling();
+    const meData = await loadMeOptional();
+    const isGuest = !meData?.user;
+    const liveId = queryParam("live");
+    if (liveId) {
+      if (isGuest) {
+        toast("Jonli efirga qo'shilish uchun login qiling", "error");
+        window.location.replace(routes.login);
+        return;
+      }
+      await renderLiveSessionPage(liveId);
+      return;
+    }
+    const videoId = queryParam("id");
+    if (!videoId) {
+      window.location.replace(routes.videos);
+      return;
+    }
+    await renderVideoLessonPage(videoId, { isGuest });
+  }
+
   async function renderMaterialDetailPage() {
     clearPolling();
     const materialId = queryParam("id");
@@ -1400,6 +3161,14 @@
     const canSubmit = !!data.canSubmit;
     const canReview = !!data.canReview;
     const submissions = data.submissions || [];
+    const materialVideo = material?.hasYoutubeVideo
+      ? {
+          id: material.youtubeId,
+          embed: material.youtubeEmbedUrl,
+          watch: material.youtubeWatchUrl,
+          thumb: material.youtubeThumbnail,
+        }
+      : youtubeMeta(material?.link || "");
 
     renderPage({
       title: material?.title || "Material",
@@ -1415,6 +3184,7 @@
               <p class="mini-card-title">${escapeHtml(material?.title || "Material")}</p>
               <span class="mini-badge">${escapeHtml(materialTypeLabel(material?.type))}</span>
             </div>
+            ${materialVideo ? youtubeEmbedCard(materialVideo) : ""}
             <p class="mini-card-copy">${escapeHtml(material?.description || "")}</p>
             <div class="mini-card-meta">
               <span>${escapeHtml(material?.authorName || "Admin")}</span>
@@ -1422,7 +3192,7 @@
             </div>
             ${
               material?.link
-                ? `<a class="button secondary" href="${escapeHtml(material.link)}" target="_blank" rel="noopener noreferrer">Material havolasi</a>`
+                ? `<a class="button secondary" href="${escapeHtml(materialVideo?.watch || material.link)}" target="_blank" rel="noopener noreferrer">${materialVideo ? "YouTube videoni ochish" : "Material havolasi"}</a>`
                 : ""
             }
           </div>
@@ -1648,13 +3418,13 @@
 
     renderPage({
       title: "Qidiruv",
-      subtitle: "Kontaktlarni toping va mavjud guruhlarni tez oching.",
+      subtitle: "Ustozlar, talabalar, guruhlar, video darslar va jonli efirlarni qidiring.",
       actions: profileButton(),
       content: `
         <section class="panel panel-pad stack">
           <div class="field">
-            <label for="search-input">Foydalanuvchi yoki guruh qidiring</label>
-            <input class="input" id="search-input" placeholder="Ali, @team, group...">
+            <label for="search-input">Barcha bo'limlar bo'yicha qidiruv</label>
+            <input class="input" id="search-input" placeholder="Ustoz, talaba, kurs, video, live...">
           </div>
         </section>
         <section class="panel panel-pad stack">
@@ -1675,14 +3445,36 @@
           </div>
           <div class="result-list" id="groups-results"></div>
         </section>
+        <section class="panel panel-pad stack">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">Videodarslar</h2>
+              <p class="section-subtitle" id="videos-count">0 ta</p>
+            </div>
+          </div>
+          <div class="result-list" id="videos-results"></div>
+        </section>
+        <section class="panel panel-pad stack">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">Jonli efirlar</h2>
+              <p class="section-subtitle" id="lives-count">0 ta</p>
+            </div>
+          </div>
+          <div class="result-list" id="lives-results"></div>
+        </section>
       `,
     });
 
     const searchInput = document.getElementById("search-input");
     const usersRoot = document.getElementById("users-results");
     const groupsRoot = document.getElementById("groups-results");
+    const videosRoot = document.getElementById("videos-results");
+    const livesRoot = document.getElementById("lives-results");
     const usersCount = document.getElementById("users-count");
     const groupsCount = document.getElementById("groups-count");
+    const videosCount = document.getElementById("videos-count");
+    const livesCount = document.getElementById("lives-count");
     let debounceTimer = 0;
 
     async function runSearch() {
@@ -1690,14 +3482,24 @@
         const data = await api(`/api/search?q=${encodeURIComponent(searchInput.value.trim())}`);
         const users = data.users || [];
         const groups = data.groups || [];
+        const videos = data.videos || [];
+        const liveSessions = data.liveSessions || [];
         usersCount.textContent = `${users.length} ta`;
         groupsCount.textContent = `${groups.length} ta`;
+        videosCount.textContent = `${videos.length} ta`;
+        livesCount.textContent = `${liveSessions.length} ta`;
         usersRoot.innerHTML = users.length
           ? users.map(userResult).join("")
           : emptyState("Kontakt topilmadi", "Boshqa so'z bilan qidirib ko'ring.");
         groupsRoot.innerHTML = groups.length
           ? groups.map(groupResult).join("")
           : emptyState("Guruh topilmadi", "Siz a'zo bo'lgan guruhlar shu yerda ko'rinadi.");
+        videosRoot.innerHTML = videos.length
+          ? videos.map(videoResult).join("")
+          : emptyState("Video topilmadi", "Nom yoki teg bo'yicha qidirib ko'ring.");
+        livesRoot.innerHTML = liveSessions.length
+          ? liveSessions.map(liveResult).join("")
+          : emptyState("Jonli efir topilmadi", "Hozircha faol live yo'q.");
         attachStartChatHandlers();
       } catch (error) {
         toast(error.message, "error");
@@ -1714,9 +3516,14 @@
 
   async function renderProfilePage() {
     clearPolling();
-    const meData = await loadMe();
-    const profileId = queryParam("id") || meData.user.id;
-    const profileData = await api(`/api/users/${profileId}/profile`);
+    const meData = await loadMeOptional();
+    const viewerId = meData?.user?.id || "";
+    const profileId = queryParam("id") || viewerId;
+    if (!profileId) {
+      window.location.replace(routes.videos);
+      return;
+    }
+    const profileData = await api(`${viewerId ? "/api/users/" : "/api/public/users/"}${encodeURIComponent(profileId)}/profile`);
     const user = profileData.user;
     const isSelf = profileData.isSelf;
     const groups = profileData.groups || [];
@@ -1724,18 +3531,41 @@
     const attendanceFeed = profileData.attendanceFeed || [];
     const attendanceSummary = profileData.attendanceSummary || { total: 0, present: 0, absent: 0 };
     const finance = profileData.finance || null;
+    const social = profileData.social || { followerCount: 0, followingCount: 0, isFollowing: false, courseCount: 0, studentCount: 0 };
+    const isTeacherProfile = String(user?.role || "").toLowerCase() === "teacher";
+    const [teacherVideosData, activeLivesData] = await Promise.all([
+      isTeacherProfile
+        ? api(`${viewerId ? "/api/videos" : "/api/public/videos"}?teacherId=${encodeURIComponent(user.id)}&sort=new`).catch(() => ({ videos: [] }))
+        : Promise.resolve({ videos: [] }),
+      api(viewerId ? "/api/live/active" : "/api/public/live/active").catch(() => ({ sessions: [] })),
+    ]);
+    const teacherVideos = (teacherVideosData.videos || []).slice(0, 12);
+    const teacherLive = (activeLivesData.sessions || []).find((session) => session.teacher?.id === user.id) || null;
+    const canStartLive = isSelf && isTeacherProfile;
     let avatarFile = null;
 
     renderPage({
       title: isSelf ? "Mening profilim" : user.fullName,
       subtitle: isSelf ? "Shaxsiy kabinet va o'quv faoliyati." : `${roleLabel(user.role)} profili`,
       actions: `
-        ${!isSelf ? `<button class="button secondary" id="profile-message">${icons.chats}<span>Yozish</span></button>` : ""}
-        ${isSelf ? `<button class="button danger" id="logout-button">${icons.logout}<span>Chiqish</span></button>` : profileButton()}
+        ${
+          viewerId && !isSelf && isTeacherProfile
+            ? `<button class="button ${social.isFollowing ? "secondary" : "primary"}" id="profile-follow" data-following="${social.isFollowing ? "1" : "0"}">${icons.bell}<span>${social.isFollowing ? "Obunadasiz" : "Obuna bo'lish"}</span></button>`
+            : ""
+        }
+        ${viewerId && !isSelf ? `<button class="button secondary" id="profile-message">${icons.chats}<span>Xabar yuborish</span></button>` : ""}
+        ${
+          isSelf
+            ? `<button class="button danger" id="logout-button">${icons.logout}<span>Chiqish</span></button>`
+            : viewerId
+              ? profileButton()
+              : `<a class="button secondary" href="${routes.login}">Kirish</a><a class="button primary" href="${routes.register}">Register</a>`
+        }
       `,
       stats: `
         ${quickChip(profileData.stats.direct, "Direct chat")}
         ${quickChip(groups.length, "Guruh")}
+        ${isTeacherProfile ? quickChip(social.followerCount || 0, "Obunachi") : quickChip(social.followingCount || 0, "Obunalar")}
         ${quickChip(user.role === "teacher" ? students.length : attendanceSummary.total, user.role === "teacher" ? "Talabalar" : "Davomat")}
         ${quickChip(user.role === "teacher" ? attendanceSummary.total : attendanceSummary.present, user.role === "teacher" ? "Davomat kunlari" : "Kelgan")}
         ${user.role === "abituriyent" && finance ? quickChip(formatMoney(finance.remaining || 0), "Qolgan oylik") : ""}
@@ -1764,9 +3594,9 @@
           </div>
           <div class="profile-social-stats">
             <div><strong>${groups.length}</strong><span>Guruh</span></div>
-            <div><strong>${profileData.stats.direct}</strong><span>Chat</span></div>
-            <div><strong>${attendanceSummary.present}</strong><span>Kelgan</span></div>
-            <div><strong>${attendanceSummary.absent}</strong><span>Yo'q</span></div>
+            <div><strong>${isTeacherProfile ? social.followerCount || 0 : profileData.stats.direct}</strong><span>${isTeacherProfile ? "Obunachi" : "Chat"}</span></div>
+            <div><strong>${isTeacherProfile ? social.courseCount || groups.length : attendanceSummary.present}</strong><span>${isTeacherProfile ? "Kurslar" : "Kelgan"}</span></div>
+            <div><strong>${isTeacherProfile ? social.studentCount || students.length : attendanceSummary.absent}</strong><span>${isTeacherProfile ? "Talabalar" : "Yo'q"}</span></div>
           </div>
         </section>
         <div class="profile-social-grid">
@@ -1783,6 +3613,8 @@
                 <div class="profile-line"><span>Telefon</span><strong>${escapeHtml(user.phone || "-")}</strong></div>
                 <div class="profile-line"><span>Username</span><strong>@${escapeHtml(user.username)}</strong></div>
                 <div class="profile-line"><span>Yuborgan xabarlar</span><strong>${profileData.stats.sent}</strong></div>
+                ${isTeacherProfile ? `<div class="profile-line"><span>Obunachilar</span><strong>${escapeHtml(String(social.followerCount || 0))}</strong></div>` : ""}
+                <div class="profile-line"><span>Obuna bo'lganlar</span><strong>${escapeHtml(String(social.followingCount || 0))}</strong></div>
               </div>
             </section>
             ${
@@ -1866,7 +3698,7 @@
                       .map(
                         (group) => `
                           <article class="conversation-item">
-                            <a class="conversation-main conversation-link" href="${group.members?.some((member) => member.id === meData.user.id) ? `${routes.group}?id=${group.id}` : routes.groups}">
+                            <a class="conversation-main conversation-link" href="${group.members?.some((member) => member.id === viewerId) ? `${routes.group}?id=${group.id}` : routes.groups}">
                               ${avatar(group.name, group.avatar, "avatar large")}
                               <div class="conversation-copy">
                                 <div class="conversation-top">
@@ -1891,6 +3723,71 @@
                   : emptyState("Guruh yo'q", "Bu profil uchun hali guruh topilmadi.")
               }
             </section>
+            ${
+              isTeacherProfile
+                ? `
+                  <section class="panel panel-pad stack">
+                    <div class="section-head">
+                      <div>
+                        <h2 class="section-title">Jonli efir</h2>
+                        <p class="section-subtitle">${teacherLive ? "Hozir faol efir bor" : "Hozir live yo'q"}</p>
+                      </div>
+                    </div>
+                    ${
+                      teacherLive
+                        ? `
+                          <article class="live-card profile-live-card">
+                            <div class="live-card-head">
+                              <span class="live-dot"></span>
+                              <span>LIVE</span>
+                            </div>
+                            <h3>${escapeHtml(teacherLive.title || "Jonli efir")}</h3>
+                            <p>${escapeHtml(String(teacherLive.participantCount || 0))} ishtirokchi • ${escapeHtml(String(teacherLive.likesCount || 0))} like</p>
+                            <div class="page-actions">
+                              <a class="button primary" href="${liveHref(teacherLive.id)}">Efirga kirish</a>
+                            </div>
+                          </article>
+                        `
+                        : `<p class="muted-copy">Faol jonli efir mavjud emas.</p>`
+                    }
+                    ${
+                      canStartLive
+                        ? `
+                          <form id="profile-live-form" class="stack">
+                            <div class="field">
+                              <label for="profile-live-title">Efir nomi</label>
+                              <input class="input" id="profile-live-title" placeholder="Speaking club live">
+                            </div>
+                            <div class="field">
+                              <label for="profile-live-desc">Qisqa tavsif</label>
+                              <textarea class="textarea" id="profile-live-desc" placeholder="Bugungi mavzu..."></textarea>
+                            </div>
+                            <button class="button primary" type="submit">${icons.live}<span>${teacherLive ? "Yangi efirga o'tish" : "Jonli efirni boshlash"}</span></button>
+                          </form>
+                        `
+                        : ""
+                    }
+                  </section>
+                  <section class="panel panel-pad stack">
+                    <div class="section-head">
+                      <div>
+                        <h2 class="section-title">Video darslar</h2>
+                        <p class="section-subtitle">${teacherVideos.length} ta video</p>
+                      </div>
+                      ${teacherVideos.length ? `<a class="button secondary" href="${routes.videos}?teacherId=${encodeURIComponent(user.id)}">Barchasi</a>` : ""}
+                    </div>
+                    ${
+                      teacherVideos.length
+                        ? `<div class="video-grid profile-video-grid">${teacherVideos
+                            .slice(0, 6)
+                            .map((item) => videoCard(item, true, state.site?.heroImage || "", isSelf && isTeacherProfile))
+                            .join("")}</div>`
+                        : `<p class="muted-copy">Hozircha video dars joylanmagan.</p>`
+                    }
+                  </section>
+                `
+                : ""
+            }
             ${
               user.role === "teacher"
                 ? `
@@ -1971,11 +3868,49 @@
       window.location.replace(routes.login);
     });
 
+    document.getElementById("profile-follow")?.addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      const isFollowingNow = button.dataset.following === "1";
+      try {
+        await api(`/api/teachers/${encodeURIComponent(user.id)}/follow`, { method: isFollowingNow ? "DELETE" : "POST" });
+        toast(isFollowingNow ? "Obuna bekor qilindi" : "Ustozga obuna bo'ldingiz", "success");
+        await renderProfilePage();
+      } catch (error) {
+        toast(error.message, "error");
+        button.disabled = false;
+      }
+    });
+
     document.getElementById("profile-message")?.addEventListener("click", async () => {
       try {
         await startDirectChat(user.id);
       } catch (error) {
         toast(error.message, "error");
+      }
+    });
+
+    document.getElementById("profile-live-form")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = event.currentTarget.querySelector("button[type='submit']");
+      button.disabled = true;
+      try {
+        const data = await api("/api/live/start", {
+          method: "POST",
+          body: {
+            title: document.getElementById("profile-live-title").value,
+            description: document.getElementById("profile-live-desc").value,
+          },
+        });
+        toast("Jonli efir boshlandi", "success");
+        if (data.session?.id) {
+          window.location.href = liveHref(data.session.id);
+          return;
+        }
+        await renderProfilePage();
+      } catch (error) {
+        toast(error.message, "error");
+        button.disabled = false;
       }
     });
 
@@ -3017,6 +4952,9 @@
           <article class="stat-card"><strong>${overview.counts.attendance || 0}</strong><span>Davomat</span></article>
           <article class="stat-card"><strong>${overview.counts.studentPayments || 0}</strong><span>To'lov yozuvlari</span></article>
           <article class="stat-card"><strong>${overview.counts.financeExpenses || 0}</strong><span>Xarajat yozuvlari</span></article>
+          <article class="stat-card"><strong>${overview.counts.videoLessons || 0}</strong><span>Videodarslar</span></article>
+          <article class="stat-card"><strong>${overview.counts.activeLives || 0}</strong><span>Faol live</span></article>
+          <article class="stat-card"><strong>${overview.counts.pendingJoinRequests || 0}</strong><span>Join so'rovlari</span></article>
         </section>
         <section class="module-grid panel panel-pad">
           ${moduleTile("home", routes.adminLanding, "Landing", "Asosiy saytni tahrirlash")}
@@ -3064,16 +5002,24 @@
             </div>
             <div class="field"><label>Hero sarlavha</label><input class="input" id="al-site-hero-title" value="${escapeHtml(site.heroTitle || "")}"></div>
             <div class="field"><label>Hero matni</label><textarea class="textarea" id="al-site-hero-subtitle">${escapeHtml(site.heroSubtitle || "")}</textarea></div>
+            <div class="grid-2">
+              <div class="field"><label>Hero CTA (asosiy tugma)</label><input class="input" id="al-site-hero-primary" value="${escapeHtml(site.heroPrimaryCta || "")}"></div>
+              <div class="field"><label>Hero CTA (ikkinchi tugma)</label><input class="input" id="al-site-hero-secondary" value="${escapeHtml(site.heroSecondaryCta || "")}"></div>
+            </div>
             <div class="field"><label>Hero rasm URL</label><input class="input" id="al-site-hero-image" value="${escapeHtml(site.heroImage || "")}" placeholder="https://..."></div>
             <div class="field"><label>Hero rasm fayli</label><input class="input" id="al-site-hero-file" type="file" accept="image/*"></div>
-            <div class="grid-2">
+            <div class="grid-3">
               <div class="field"><label>Telefon</label><input class="input" id="al-site-phone" value="${escapeHtml(site.phone || "")}"></div>
               <div class="field"><label>Telegram link</label><input class="input" id="al-site-telegram" value="${escapeHtml(site.telegram || "")}" placeholder="https://t.me/..."></div>
+              <div class="field"><label>Email</label><input class="input" id="al-site-email" value="${escapeHtml(site.email || "")}" placeholder="team@cliffs.uz"></div>
             </div>
             <div class="grid-2">
               <div class="field"><label>Manzil</label><input class="input" id="al-site-address" value="${escapeHtml(site.address || "")}"></div>
               <div class="field"><label>Ish vaqti</label><input class="input" id="al-site-hours" value="${escapeHtml(site.workingHours || "")}"></div>
             </div>
+            <div class="field"><label>Footer sarlavha</label><input class="input" id="al-site-footer-title" value="${escapeHtml(site.footerTitle || "")}"></div>
+            <div class="field"><label>Footer matni</label><textarea class="textarea" id="al-site-footer-description">${escapeHtml(site.footerDescription || "")}</textarea></div>
+            <div class="field"><label>Footer copyright</label><input class="input" id="al-site-footer-copy" value="${escapeHtml(site.footerCopyright || "")}"></div>
             <div class="field"><label>Kurslar (har qatorga bittadan)</label><textarea class="textarea" id="al-site-courses">${escapeHtml((site.courses || []).join("\n"))}</textarea></div>
             <div class="field"><label>Galereya rasmlari URL (har qatorga bittadan)</label><textarea class="textarea" id="al-site-gallery">${escapeHtml((site.gallery || []).join("\n"))}</textarea></div>
             <div class="field"><label>Galereya fayllari</label><input class="input" id="al-site-gallery-files" type="file" accept="image/*" multiple></div>
@@ -3099,11 +5045,17 @@
         faviconUrl: document.getElementById("al-site-favicon").value,
         heroTitle: document.getElementById("al-site-hero-title").value,
         heroSubtitle: document.getElementById("al-site-hero-subtitle").value,
+        heroPrimaryCta: document.getElementById("al-site-hero-primary").value,
+        heroSecondaryCta: document.getElementById("al-site-hero-secondary").value,
         heroImage: document.getElementById("al-site-hero-image").value,
         phone: document.getElementById("al-site-phone").value,
         telegram: document.getElementById("al-site-telegram").value,
+        email: document.getElementById("al-site-email").value,
         address: document.getElementById("al-site-address").value,
         workingHours: document.getElementById("al-site-hours").value,
+        footerTitle: document.getElementById("al-site-footer-title").value,
+        footerDescription: document.getElementById("al-site-footer-description").value,
+        footerCopyright: document.getElementById("al-site-footer-copy").value,
         courses: document
           .getElementById("al-site-courses")
           .value.split(/\r?\n/)
@@ -3159,9 +5111,14 @@
   async function renderAdminUsersPage() {
     clearPolling();
     if (!(await ensureAdminAccess(routes.adminUsers))) return;
-    const [userData, chatData] = await Promise.all([api("/api/admin/users"), api("/api/admin/chats?type=group")]);
+    const [userData, chatData, pendingData] = await Promise.all([
+      api("/api/admin/users"),
+      api("/api/admin/chats?type=group"),
+      api("/api/admin/users?approvalStatus=pending"),
+    ]);
     const teachers = (userData.users || []).filter((user) => user.role === "teacher");
     const groups = (chatData.chats || []).filter((chat) => chat.type === "group");
+    const pendingUsers = pendingData.users || [];
 
     renderPage({
       title: "Admin Users",
@@ -3198,6 +5155,7 @@
                 <label>Guruh (abituriyent uchun)</label>
                 <select class="input" id="au-group"><option value="">Tanlanmagan</option>${groups.map((g) => `<option value="${g.id}">${escapeHtml(g.name)}</option>`).join("")}</select>
               </div>
+              <p class="section-subtitle">Abituriyent uchun boshlang'ich biriktirish: bitta o'qituvchi + bitta guruh.</p>
               <button class="button primary" type="submit">${icons.plus}<span>Qo'shish</span></button>
             </form>
           </section>
@@ -3206,6 +5164,40 @@
             <div class="field"><input class="input" id="au-search" placeholder="Qidirish..."></div>
             <div class="result-list" id="au-list"></div>
           </section>
+        </section>
+        <section class="panel panel-pad stack">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">Register so'rovlari</h2>
+              <p class="section-subtitle">${pendingUsers.length} ta pending</p>
+            </div>
+          </div>
+          <div class="result-list">
+            ${
+              pendingUsers.length
+                ? pendingUsers
+                    .map(
+                      (user) => `
+                        <article class="result-item">
+                          <div class="result-main">
+                            ${avatar(user.fullName, user.avatar, "avatar")}
+                            <div class="result-copy">
+                              <p class="result-name">${escapeHtml(user.fullName || "Foydalanuvchi")}</p>
+                              <p class="result-preview">@${escapeHtml(user.username || "")} • ${escapeHtml(user.phone || "-")}</p>
+                              <p class="result-preview">Status: ${escapeHtml(requestStatusLabel(user.approvalStatus || "pending"))}</p>
+                            </div>
+                          </div>
+                          <div class="page-actions">
+                            <button class="button primary" type="button" data-au-approve="${user.id}">${icons.plus}<span>Tasdiqlash</span></button>
+                            <button class="button danger" type="button" data-au-reject="${user.id}">${icons.close}<span>Rad etish</span></button>
+                          </div>
+                        </article>
+                      `
+                    )
+                    .join("")
+                : `<p class="muted-copy">Pending register so'rovi yo'q.</p>`
+            }
+          </div>
         </section>
       `,
     });
@@ -3222,7 +5214,7 @@
             ${avatar(user.fullName, user.avatar, "avatar")}
             <div class="result-copy">
               <p class="result-name">${escapeHtml(user.fullName)}</p>
-              <p class="result-preview">@${escapeHtml(user.username)} • ${escapeHtml(user.role || "-")}</p>
+              <p class="result-preview">@${escapeHtml(user.username)} • ${escapeHtml(user.role || "-")} • ${escapeHtml(requestStatusLabel(user.approvalStatus || "approved"))}</p>
             </div>
           </div>
           <div class="page-actions">
@@ -3275,6 +5267,24 @@
       });
     }
 
+    function bindRegistrationActions() {
+      document.querySelectorAll("[data-au-approve]").forEach((button) => {
+        button.onclick = async () => {
+          await api(`/api/admin/users/${button.dataset.auApprove}`, { method: "PATCH", body: { approvalStatus: "approved" } });
+          toast("Register so'rovi tasdiqlandi", "success");
+          await renderAdminUsersPage();
+        };
+      });
+      document.querySelectorAll("[data-au-reject]").forEach((button) => {
+        button.onclick = async () => {
+          window.prompt("Rad etish sababi (ixtiyoriy)", "");
+          await api(`/api/admin/users/${button.dataset.auReject}`, { method: "PATCH", body: { approvalStatus: "rejected" } });
+          toast("Register so'rovi rad etildi", "success");
+          await renderAdminUsersPage();
+        };
+      });
+    }
+
     document.getElementById("admin-users-create").onsubmit = async (event) => {
       event.preventDefault();
       const button = event.currentTarget.querySelector("button");
@@ -3307,19 +5317,25 @@
       timer = setTimeout(() => refreshUsers(event.target.value.trim()), 220);
     };
     await refreshUsers();
+    bindRegistrationActions();
   }
 
   async function renderAdminGroupsPage() {
     clearPolling();
     if (!(await ensureAdminAccess(routes.adminGroups))) return;
-    const [userData, chatData] = await Promise.all([api("/api/admin/users"), api("/api/admin/chats?type=group")]);
+    const [userData, chatData, requestData] = await Promise.all([
+      api("/api/admin/users"),
+      api("/api/admin/chats?type=group"),
+      api("/api/admin/group-join-requests?status=all"),
+    ]);
     const teachers = (userData.users || []).filter((user) => user.role === "teacher");
     const students = (userData.users || []).filter((user) => user.role === "abituriyent");
     const groups = (chatData.chats || []).filter((chat) => chat.type === "group");
+    const joinRequests = requestData.requests || [];
 
     renderPage({
       title: "Admin Groups",
-      subtitle: "Kurs guruhlarini yaratish va nazorat qilish.",
+      subtitle: "Kurs guruhlarini yaratish, so'rovlarni ko'rish va tasdiqlash.",
       actions: `<button class="button danger" id="admin-logout-groups">${icons.logout}<span>Chiqish</span></button>`,
       wide: true,
       content: `
@@ -3330,6 +5346,7 @@
             <form id="ag-create" class="stack">
               <div class="field"><label>Guruh nomi</label><input class="input" id="ag-name" required></div>
               <div class="field"><label>Fan</label><input class="input" id="ag-subject" required></div>
+              <div class="field"><label>Kurs narxi (so'm)</label><input class="input" id="ag-course-price" type="number" min="0" step="1000" value="0"></div>
               <div class="field"><label>Tavsif</label><input class="input" id="ag-description"></div>
               <div class="field"><label>Avatar URL</label><input class="input" id="ag-avatar"></div>
               <div class="field"><label>Ustoz</label><select class="input" id="ag-teacher">${teachers.map((t) => `<option value="${t.id}">${escapeHtml(t.fullName)}</option>`).join("")}</select></div>
@@ -3362,11 +5379,12 @@
                       <div class="result-copy">
                         <p class="result-name">${escapeHtml(group.name)}</p>
                         <p class="result-preview">${escapeHtml(group.subject || "Fan")} • ${escapeHtml(String(group.memberCount || 0))} a'zo</p>
+                        <p class="result-preview">Narx: ${escapeHtml(formatMoney(group.coursePrice || 0))}</p>
                       </div>
                     </div>
                     <div class="page-actions">
                       <a class="button secondary icon-only" href="${routes.adminAttendance}?group=${encodeURIComponent(group.id)}" title="Davomat">${icons.attendance}<span>Attendance</span></a>
-                      <button class="button secondary icon-only" data-ag-edit="${group.id}" data-name="${escapeHtml(group.name)}" data-description="${escapeHtml(group.description || "")}" title="Edit">${icons.edit}<span>Edit</span></button>
+                      <button class="button secondary icon-only" data-ag-edit="${group.id}" data-name="${escapeHtml(group.name)}" data-subject="${escapeHtml(group.subject || "")}" data-description="${escapeHtml(group.description || "")}" data-price="${escapeHtml(String(group.coursePrice || 0))}" title="Edit">${icons.edit}<span>Edit</span></button>
                       <button class="button danger icon-only" data-ag-delete="${group.id}" title="Delete">${icons.trash}<span>Delete</span></button>
                     </div>
                   </article>
@@ -3374,6 +5392,54 @@
               )
               .join("")}</div>
           </section>
+        </section>
+        <section class="panel panel-pad stack">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">Kursga qo'shilish so'rovlari</h2>
+              <p class="section-subtitle">${joinRequests.length} ta</p>
+            </div>
+          </div>
+          <div class="mini-card-list">
+            ${
+              joinRequests.length
+                ? joinRequests
+                    .map(
+                      (item) => `
+                        <article class="mini-card">
+                          <div class="mini-card-top">
+                            <p class="mini-card-title">${escapeHtml(item.fullName || item.user?.fullName || "Foydalanuvchi")}</p>
+                            <span class="role-pill ${item.status === "approved" ? "ok" : item.status === "rejected" ? "danger" : "warn"}">${escapeHtml(requestStatusLabel(item.status))}</span>
+                          </div>
+                          <p class="mini-card-copy">${escapeHtml(item.phone || item.user?.phone || "-")}</p>
+                          <p class="mini-card-copy">Kurs: ${escapeHtml(item.group?.name || "-")} • Narx: ${escapeHtml(formatMoney(item.group?.coursePrice || 0))}</p>
+                          <p class="mini-card-copy">To'langan: ${escapeHtml(formatMoney(item.paymentAmount || 0))} • Admin ulushi: ${escapeHtml(String(item.adminCommissionPercent || 10))}% (${escapeHtml(formatMoney(item.adminShareAmount || 0))})</p>
+                          ${item.paymentScreenshotUrl ? `<div class="page-actions"><a class="button secondary" href="${escapeHtml(item.paymentScreenshotUrl)}" target="_blank" rel="noopener noreferrer">Skrinshotni ko'rish</a></div>` : ""}
+                          ${item.note ? `<p class="mini-card-copy">Izoh: ${escapeHtml(item.note)}</p>` : ""}
+                          ${
+                            item.status === "pending"
+                              ? `
+                                <div class="field">
+                                  <label>Biriktiriladigan guruh</label>
+                                  <select class="input" id="ag-req-group-${item.id}">
+                                    ${groups.map((group) => `<option value="${group.id}" ${item.group?.id === group.id ? "selected" : ""}>${escapeHtml(group.name)} (${escapeHtml(formatMoney(group.coursePrice || 0))})</option>`).join("")}
+                                  </select>
+                                </div>
+                                <div class="page-actions">
+                                  <button class="button primary" data-ag-req-approve="${item.id}">Tasdiqlash</button>
+                                  <button class="button danger" data-ag-req-reject="${item.id}">Rad etish</button>
+                                </div>
+                              `
+                              : ""
+                          }
+                          ${item.adminNote ? `<p class="mini-card-copy">Admin izohi: ${escapeHtml(item.adminNote)}</p>` : ""}
+                        </article>
+                      `
+                    )
+                    .join("")
+                : `<p class="muted-copy">Hozircha so'rov yo'q.</p>`
+            }
+          </div>
         </section>
       `,
     });
@@ -3388,9 +5454,13 @@
         button.onclick = async () => {
           const name = window.prompt("Guruh nomi", button.dataset.name || "");
           if (name === null) return;
+          const subject = window.prompt("Fan", button.dataset.subject || "");
+          if (subject === null) return;
+          const coursePrice = window.prompt("Kurs narxi (so'm)", button.dataset.price || "0");
+          if (coursePrice === null) return;
           const description = window.prompt("Tavsif", button.dataset.description || "");
           if (description === null) return;
-          await api(`/api/admin/chats/${button.dataset.agEdit}`, { method: "PATCH", body: { name, description } });
+          await api(`/api/admin/chats/${button.dataset.agEdit}`, { method: "PATCH", body: { name, subject, coursePrice, description } });
           toast("Yangilandi", "success");
           await renderAdminGroupsPage();
         };
@@ -3401,6 +5471,49 @@
           await api(`/api/admin/chats/${button.dataset.agDelete}`, { method: "DELETE" });
           toast("Guruh o'chirildi", "success");
           await renderAdminGroupsPage();
+        };
+      });
+    }
+
+    function bindRequestActions() {
+      document.querySelectorAll("[data-ag-req-approve]").forEach((button) => {
+        button.onclick = async () => {
+          const requestId = button.dataset.agReqApprove;
+          const selectedGroupId = document.getElementById(`ag-req-group-${requestId}`)?.value || "";
+          const adminNote = window.prompt("Admin izohi (ixtiyoriy)", "") || "";
+          try {
+            await api(`/api/admin/group-join-requests/${requestId}`, {
+              method: "PATCH",
+              body: {
+                action: "approve",
+                groupId: selectedGroupId,
+                adminNote,
+              },
+            });
+            toast("So'rov tasdiqlandi", "success");
+            await renderAdminGroupsPage();
+          } catch (error) {
+            toast(error.message, "error");
+          }
+        };
+      });
+      document.querySelectorAll("[data-ag-req-reject]").forEach((button) => {
+        button.onclick = async () => {
+          const requestId = button.dataset.agReqReject;
+          const adminNote = window.prompt("Rad etish sababi", "") || "";
+          try {
+            await api(`/api/admin/group-join-requests/${requestId}`, {
+              method: "PATCH",
+              body: {
+                action: "reject",
+                adminNote,
+              },
+            });
+            toast("So'rov rad etildi", "success");
+            await renderAdminGroupsPage();
+          } catch (error) {
+            toast(error.message, "error");
+          }
         };
       });
     }
@@ -3416,6 +5529,7 @@
           body: {
             name: document.getElementById("ag-name").value,
             subject: document.getElementById("ag-subject").value,
+            coursePrice: document.getElementById("ag-course-price").value,
             description: document.getElementById("ag-description").value,
             avatar: document.getElementById("ag-avatar").value,
             teacherId: document.getElementById("ag-teacher").value,
@@ -3438,6 +5552,7 @@
       });
     };
     bindGroupActions();
+    bindRequestActions();
   }
 
   async function renderAdminContentPage() {
@@ -3532,6 +5647,7 @@
               <div class="field"><label>Deadline</label><input class="input" id="ac-mat-date" type="date"></div>
             </div>
             <div class="field"><label>Havola</label><input class="input" id="ac-mat-link"></div>
+            <div id="ac-mat-preview"></div>
             <div class="field"><label>Izoh</label><textarea class="textarea" id="ac-mat-description"></textarea></div>
             <button class="button primary" type="submit">${icons.book}<span>Saqlash</span></button>
           </form>
@@ -3566,16 +5682,24 @@
             </div>
             <div class="field"><label>Hero sarlavha</label><input class="input" id="ac-site-hero-title" value="${escapeHtml(site.heroTitle || "")}"></div>
             <div class="field"><label>Hero matni</label><textarea class="textarea" id="ac-site-hero-subtitle">${escapeHtml(site.heroSubtitle || "")}</textarea></div>
+            <div class="grid-2">
+              <div class="field"><label>Hero CTA (asosiy tugma)</label><input class="input" id="ac-site-hero-primary" value="${escapeHtml(site.heroPrimaryCta || "")}"></div>
+              <div class="field"><label>Hero CTA (ikkinchi tugma)</label><input class="input" id="ac-site-hero-secondary" value="${escapeHtml(site.heroSecondaryCta || "")}"></div>
+            </div>
             <div class="field"><label>Hero rasm URL</label><input class="input" id="ac-site-hero-image" value="${escapeHtml(site.heroImage || "")}" placeholder="https://..."></div>
             <div class="field"><label>Hero rasm fayli</label><input class="input" id="ac-site-hero-file" type="file" accept="image/*"></div>
-            <div class="grid-2">
+            <div class="grid-3">
               <div class="field"><label>Telefon</label><input class="input" id="ac-site-phone" value="${escapeHtml(site.phone || "")}"></div>
               <div class="field"><label>Telegram link</label><input class="input" id="ac-site-telegram" value="${escapeHtml(site.telegram || "")}" placeholder="https://t.me/..."></div>
+              <div class="field"><label>Email</label><input class="input" id="ac-site-email" value="${escapeHtml(site.email || "")}" placeholder="team@cliffs.uz"></div>
             </div>
             <div class="grid-2">
               <div class="field"><label>Manzil</label><input class="input" id="ac-site-address" value="${escapeHtml(site.address || "")}"></div>
               <div class="field"><label>Ish vaqti</label><input class="input" id="ac-site-hours" value="${escapeHtml(site.workingHours || "")}"></div>
             </div>
+            <div class="field"><label>Footer sarlavha</label><input class="input" id="ac-site-footer-title" value="${escapeHtml(site.footerTitle || "")}"></div>
+            <div class="field"><label>Footer matni</label><textarea class="textarea" id="ac-site-footer-description">${escapeHtml(site.footerDescription || "")}</textarea></div>
+            <div class="field"><label>Footer copyright</label><input class="input" id="ac-site-footer-copy" value="${escapeHtml(site.footerCopyright || "")}"></div>
             <div class="field"><label>Kurslar (har qatorga bittadan)</label><textarea class="textarea" id="ac-site-courses">${escapeHtml((site.courses || []).join("\n"))}</textarea></div>
             <div class="field"><label>Galereya rasmlari URL (har qatorga bittadan)</label><textarea class="textarea" id="ac-site-gallery">${escapeHtml((site.gallery || []).join("\n"))}</textarea></div>
             <div class="field"><label>Galereya fayllari</label><input class="input" id="ac-site-gallery-files" type="file" accept="image/*" multiple></div>
@@ -3589,6 +5713,16 @@
       clearAdminToken();
       window.location.reload();
     };
+
+    const adminMaterialLink = document.getElementById("ac-mat-link");
+    const adminMaterialPreview = document.getElementById("ac-mat-preview");
+    const paintAdminMaterialPreview = () => {
+      if (!adminMaterialPreview) return;
+      const meta = youtubeMeta(adminMaterialLink?.value || "");
+      adminMaterialPreview.innerHTML = meta ? youtubeEmbedCard(meta, true) : "";
+    };
+    adminMaterialLink?.addEventListener("input", paintAdminMaterialPreview);
+    paintAdminMaterialPreview();
 
     document.getElementById("ac-announcement").onsubmit = async (event) => {
       event.preventDefault();
@@ -3659,11 +5793,17 @@
         faviconUrl: document.getElementById("ac-site-favicon").value,
         heroTitle: document.getElementById("ac-site-hero-title").value,
         heroSubtitle: document.getElementById("ac-site-hero-subtitle").value,
+        heroPrimaryCta: document.getElementById("ac-site-hero-primary").value,
+        heroSecondaryCta: document.getElementById("ac-site-hero-secondary").value,
         heroImage: document.getElementById("ac-site-hero-image").value,
         phone: document.getElementById("ac-site-phone").value,
         telegram: document.getElementById("ac-site-telegram").value,
+        email: document.getElementById("ac-site-email").value,
         address: document.getElementById("ac-site-address").value,
         workingHours: document.getElementById("ac-site-hours").value,
+        footerTitle: document.getElementById("ac-site-footer-title").value,
+        footerDescription: document.getElementById("ac-site-footer-description").value,
+        footerCopyright: document.getElementById("ac-site-footer-copy").value,
         courses: document
           .getElementById("ac-site-courses")
           .value.split(/\r?\n/)
@@ -4273,6 +6413,7 @@
             <div class="chat-thread" id="chat-thread"></div>
             <section class="composer-wrap">
               <div class="composer-panel">
+                <div id="reply-preview"></div>
                 <div id="file-preview"></div>
                 <form id="composer-form" class="composer-form">
                   <label class="upload-button" aria-label="Rasm tanlash">
@@ -4287,6 +6428,23 @@
               </div>
             </section>
           </section>
+        </div>
+        <div class="message-action-menu hide" id="message-action-menu">
+          <div class="message-action-reactions">
+            <button type="button" data-message-quick-react="👍">👍</button>
+            <button type="button" data-message-quick-react="❤️">❤️</button>
+            <button type="button" data-message-quick-react="🔥">🔥</button>
+            <button type="button" data-message-quick-react="👏">👏</button>
+            <button type="button" data-message-quick-react="😂">😂</button>
+            <button type="button" data-message-quick-react="😮">😮</button>
+            <button type="button" data-message-quick-react="😢">😢</button>
+          </div>
+          <div class="message-action-list">
+            <button type="button" data-message-action="reply">${icons.chats}<span>Reply</span></button>
+            <button type="button" data-message-action="copy">${icons.book}<span>Copy</span></button>
+            <button type="button" data-message-action="share">${icons.send}<span>Share</span></button>
+            <button type="button" data-message-action="edit" id="message-action-edit">${icons.edit}<span>Edit</span></button>
+          </div>
         </div>
         ${
           chat.type === "group"
@@ -4352,9 +6510,11 @@
 
     const thread = document.getElementById("chat-thread");
     const filePreview = document.getElementById("file-preview");
+    const replyPreview = document.getElementById("reply-preview");
     const fileInput = document.getElementById("composer-file");
     const textInput = document.getElementById("composer-text");
     const form = document.getElementById("composer-form");
+    const actionMenu = document.getElementById("message-action-menu");
     const callLayer = document.getElementById("call-layer");
     const callGrid = document.getElementById("call-grid");
     const callEmpty = document.getElementById("call-empty");
@@ -4371,6 +6531,8 @@
     const attendanceRoot = document.getElementById("attendance-root");
     const canMarkAttendance = chat.type === "group" && chat.teacherId === state.me.id;
     const canManageGroupHub = chat.type === "group" && !!groupHub?.canManage;
+    let replyTarget = null;
+    let actionMessageId = "";
 
     function openGroupMenu() {
       if (!groupMenuLayer) return;
@@ -4386,16 +6548,33 @@
 
     function renderGroupHub() {
       if (chat.type !== "group" || !groupHubRoot) return;
-      const announcements = (groupHub?.announcements || []).slice(0, 4);
+      const announcements = canManageGroupHub ? (groupHub?.announcements || []) : (groupHub?.announcements || []).slice(0, 4);
       const schedule = (groupHub?.schedule || []).slice(0, 6);
-      const materials = (groupHub?.materials || []).slice(0, 5);
+      const materials = canManageGroupHub ? (groupHub?.materials || []) : (groupHub?.materials || []).slice(0, 5);
 
       groupHubRoot.innerHTML = `
         <section class="group-hub">
           <details class="toggle-panel" ${announcements.length ? "open" : ""}>
             <summary>E'lonlar <span class="toggle-count">${announcements.length} ta</span></summary>
             <div class="toggle-body">
-              ${announcements.length ? `<div class="mini-card-list">${announcements.map((item) => announcementCard(item)).join("")}</div>` : `<p class="muted-copy">Hali e'lon yo'q.</p>`}
+              ${
+                announcements.length
+                  ? `<div class="mini-card-list">${announcements
+                      .map((item) =>
+                        announcementCard(
+                          item,
+                          false,
+                          canManageGroupHub
+                            ? `
+                              <button class="button secondary" type="button" data-group-ann-edit="${escapeHtml(item.id)}">${icons.edit}<span>Edit</span></button>
+                              <button class="button danger" type="button" data-group-ann-delete="${escapeHtml(item.id)}">${icons.trash}<span>Delete</span></button>
+                            `
+                            : ""
+                        )
+                      )
+                      .join("")}</div>`
+                  : `<p class="muted-copy">Hali e'lon yo'q.</p>`
+              }
             </div>
           </details>
           <details class="toggle-panel">
@@ -4407,13 +6586,50 @@
           <details class="toggle-panel">
             <summary>Materiallar <span class="toggle-count">${materials.length} ta</span></summary>
             <div class="toggle-body">
-              ${materials.length ? `<div class="mini-card-list">${materials.map((item) => materialCard(item)).join("")}</div>` : `<p class="muted-copy">Material yoki vazifa hali yo'q.</p>`}
+              ${
+                materials.length
+                  ? `<div class="mini-card-list">${materials
+                      .map((item) =>
+                        materialCard(
+                          item,
+                          false,
+                          canManageGroupHub
+                            ? `
+                              <button class="button secondary" type="button" data-group-material-edit="${escapeHtml(item.id)}">${icons.edit}<span>Edit</span></button>
+                              <button class="button danger" type="button" data-group-material-delete="${escapeHtml(item.id)}">${icons.trash}<span>Delete</span></button>
+                            `
+                            : ""
+                        )
+                      )
+                      .join("")}</div>`
+                  : `<p class="muted-copy">Material yoki vazifa hali yo'q.</p>`
+              }
             </div>
           </details>
           ${
             canManageGroupHub
               ? `
                 <div class="group-hub-tools">
+                  <details class="toggle-panel">
+                    <summary>Guruh ma'lumotlarini tahrirlash</summary>
+                    <div class="toggle-body">
+                      <form id="group-settings-form" class="stack">
+                        <div class="grid-2">
+                          <div class="field"><label>Guruh nomi</label><input class="input" id="group-settings-name" value="${escapeHtml(chat.name || "")}" required></div>
+                          <div class="field"><label>Fan</label><input class="input" id="group-settings-subject" value="${escapeHtml(chat.subject || "")}"></div>
+                        </div>
+                        <div class="grid-2">
+                          <div class="field"><label>Username</label><input class="input" id="group-settings-username" value="${escapeHtml(chat.username || "")}" placeholder="ielts_odan"></div>
+                          <div class="field"><label>Avatar URL</label><input class="input" id="group-settings-avatar" value="${escapeHtml(chat.avatar || "")}" placeholder="https://..."></div>
+                        </div>
+                        <div class="field"><label>Bio / tavsif</label><textarea class="textarea" id="group-settings-description">${escapeHtml(chat.description || "")}</textarea></div>
+                        <div class="page-actions">
+                          <button class="button secondary" type="submit">${icons.edit}<span>Saqlash</span></button>
+                          <button class="button danger" type="button" id="group-delete-button">${icons.trash}<span>Guruhni o'chirish</span></button>
+                        </div>
+                      </form>
+                    </div>
+                  </details>
                   <details class="toggle-panel">
                     <summary>Guruh e'loni yozish</summary>
                     <div class="toggle-body">
@@ -4448,6 +6664,7 @@
                         </div>
                         <div class="field"><label>Nomi</label><input class="input" id="group-material-title" required></div>
                         <div class="field"><label>Havola</label><input class="input" id="group-material-link" placeholder="https://..."></div>
+                        <div id="group-material-preview"></div>
                         <div class="field"><label>Izoh</label><textarea class="textarea" id="group-material-description" placeholder="Mavzu yoki topshiriq tafsilotlari"></textarea></div>
                         <button class="button secondary" type="submit">${icons.book}<span>Saqlash</span></button>
                       </form>
@@ -4459,6 +6676,59 @@
           }
         </section>
       `;
+
+      const groupMaterialLinkInput = document.getElementById("group-material-link");
+      const groupMaterialPreview = document.getElementById("group-material-preview");
+      const paintGroupMaterialPreview = () => {
+        if (!groupMaterialPreview) return;
+        const meta = youtubeMeta(groupMaterialLinkInput?.value || "");
+        groupMaterialPreview.innerHTML = meta ? youtubeEmbedCard(meta, true) : "";
+      };
+      groupMaterialLinkInput?.addEventListener("input", paintGroupMaterialPreview);
+      paintGroupMaterialPreview();
+
+      document.getElementById("group-settings-form")?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const button = event.currentTarget.querySelector("button[type='submit']");
+        button.disabled = true;
+        try {
+          const data = await api(`/api/groups/${chat.id}`, {
+            method: "PATCH",
+            body: {
+              name: document.getElementById("group-settings-name").value,
+              subject: document.getElementById("group-settings-subject").value,
+              username: document.getElementById("group-settings-username").value,
+              avatar: document.getElementById("group-settings-avatar").value,
+              description: document.getElementById("group-settings-description").value,
+            },
+          });
+          const nextGroup = data.group || null;
+          if (nextGroup) {
+            chat.name = nextGroup.name || chat.name;
+            chat.subject = nextGroup.subject || "";
+            chat.username = nextGroup.username || "";
+            chat.avatar = nextGroup.avatar || "";
+            chat.description = nextGroup.description || "";
+          }
+          toast("Guruh ma'lumotlari saqlandi", "success");
+          window.location.reload();
+        } catch (error) {
+          toast(error.message, "error");
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      document.getElementById("group-delete-button")?.addEventListener("click", async () => {
+        if (!window.confirm("Guruhni butunlay o'chirishni tasdiqlaysizmi?")) return;
+        try {
+          await api(`/api/groups/${chat.id}`, { method: "DELETE" });
+          toast("Guruh o'chirildi", "success");
+          window.location.replace(routes.groups);
+        } catch (error) {
+          toast(error.message, "error");
+        }
+      });
 
       document.getElementById("group-announcement-form")?.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -4506,6 +6776,110 @@
         } finally {
           button.disabled = false;
         }
+      });
+
+      document.querySelectorAll("[data-group-ann-edit]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const current = (groupHub?.announcements || []).find((item) => item.id === button.dataset.groupAnnEdit);
+          if (!current) return;
+          const title = window.prompt("E'lon sarlavhasi", current.title || "");
+          if (title === null) return;
+          const bodyText = window.prompt("E'lon matni", current.body || "");
+          if (bodyText === null) return;
+          const pinnedRaw = window.prompt("Muhim e'lonmi? (ha/yo'q)", current.pinned ? "ha" : "yo'q");
+          if (pinnedRaw === null) return;
+          const pinned = /^(ha|h|yes|y|1|true)$/i.test(String(pinnedRaw || "").trim());
+          button.disabled = true;
+          try {
+            await api(`/api/groups/${chat.id}/announcements/${encodeURIComponent(current.id)}`, {
+              method: "PATCH",
+              body: {
+                title,
+                body: bodyText,
+                pinned,
+              },
+            });
+            groupHub = await api(`/api/groups/${chat.id}/hub`);
+            renderGroupHub();
+            toast("E'lon yangilandi", "success");
+          } catch (error) {
+            toast(error.message, "error");
+            button.disabled = false;
+          }
+        });
+      });
+
+      document.querySelectorAll("[data-group-ann-delete]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          if (!window.confirm("E'lonni o'chirishni tasdiqlaysizmi?")) return;
+          button.disabled = true;
+          try {
+            await api(`/api/groups/${chat.id}/announcements/${encodeURIComponent(button.dataset.groupAnnDelete)}`, { method: "DELETE" });
+            groupHub = await api(`/api/groups/${chat.id}/hub`);
+            renderGroupHub();
+            toast("E'lon o'chirildi", "success");
+          } catch (error) {
+            toast(error.message, "error");
+            button.disabled = false;
+          }
+        });
+      });
+
+      document.querySelectorAll("[data-group-material-edit]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const current = (groupHub?.materials || []).find((item) => item.id === button.dataset.groupMaterialEdit);
+          if (!current) return;
+          const title = window.prompt("Material nomi", current.title || "");
+          if (title === null) return;
+          const description = window.prompt("Material izohi", current.description || "");
+          if (description === null) return;
+          const typeRaw = window.prompt("Turi (material/homework/lesson)", current.type || "material");
+          if (typeRaw === null) return;
+          const type = String(typeRaw || "").trim().toLowerCase() || "material";
+          if (!["material", "homework", "lesson"].includes(type)) {
+            toast("Type faqat material/homework/lesson bo'lishi kerak", "error");
+            return;
+          }
+          const link = window.prompt("Havola", current.link || "");
+          if (link === null) return;
+          const dueDate = window.prompt("Deadline (YYYY-MM-DD yoki bo'sh)", current.dueDate || "");
+          if (dueDate === null) return;
+          button.disabled = true;
+          try {
+            await api(`/api/groups/${chat.id}/materials/${encodeURIComponent(current.id)}`, {
+              method: "PATCH",
+              body: {
+                title,
+                description,
+                type,
+                link,
+                dueDate: String(dueDate || "").trim(),
+              },
+            });
+            groupHub = await api(`/api/groups/${chat.id}/hub`);
+            renderGroupHub();
+            toast("Material yangilandi", "success");
+          } catch (error) {
+            toast(error.message, "error");
+            button.disabled = false;
+          }
+        });
+      });
+
+      document.querySelectorAll("[data-group-material-delete]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          if (!window.confirm("Materialni o'chirishni tasdiqlaysizmi?")) return;
+          button.disabled = true;
+          try {
+            await api(`/api/groups/${chat.id}/materials/${encodeURIComponent(button.dataset.groupMaterialDelete)}`, { method: "DELETE" });
+            groupHub = await api(`/api/groups/${chat.id}/hub`);
+            renderGroupHub();
+            toast("Material o'chirildi", "success");
+          } catch (error) {
+            toast(error.message, "error");
+            button.disabled = false;
+          }
+        });
       });
     }
 
@@ -4630,10 +7004,128 @@
       return thread.scrollHeight - thread.scrollTop - thread.clientHeight < 88;
     }
 
+    function findMessage(messageId) {
+      return messages.find((item) => item.id === messageId) || null;
+    }
+
+    function closeActionMenu() {
+      actionMessageId = "";
+      actionMenu?.classList.add("hide");
+    }
+
+    function paintReplyPreview() {
+      if (!replyPreview) return;
+      if (!replyTarget) {
+        replyPreview.innerHTML = "";
+        return;
+      }
+      replyPreview.innerHTML = `
+        <div class="reply-preview-strip">
+          <div class="reply-preview-copy">
+            <p class="reply-preview-title">Javob: ${escapeHtml(replyTarget.sender?.fullName || "Foydalanuvchi")}</p>
+            <p class="reply-preview-text">${escapeHtml(replyTarget.text || (replyTarget.mediaUrl ? "Media xabar" : "Xabar"))}</p>
+          </div>
+          <button class="button secondary icon-only" id="clear-reply-target" type="button" title="Reply bekor qilish">${icons.close}<span>Bekor</span></button>
+        </div>
+      `;
+      document.getElementById("clear-reply-target")?.addEventListener("click", () => {
+        replyTarget = null;
+        paintReplyPreview();
+      });
+    }
+
+    async function toggleMessageReaction(messageId, emoji) {
+      await api(`/api/chats/${chatId}/messages/${messageId}/reactions`, {
+        method: "POST",
+        body: { emoji },
+      });
+      await refreshMessages(false);
+    }
+
+    async function editMessageFlow(message) {
+      if (!message || message.sender?.id !== state.me?.id) return;
+      const nextText = window.prompt("Xabarni tahrirlash", message.text || "");
+      if (nextText === null) return;
+      const trimmed = String(nextText).trim();
+      if (!trimmed && !message.mediaUrl) return toast("Xabar bo'sh bo'lib qolmasin", "error");
+      await api(`/api/chats/${chatId}/messages/${message.id}`, {
+        method: "PATCH",
+        body: { text: trimmed },
+      });
+      toast("Xabar tahrirlandi", "success");
+      await refreshMessages(false);
+    }
+
+    async function copyMessageFlow(message) {
+      const textValue = message?.text || (message?.mediaUrl ? message.mediaUrl : "");
+      if (!textValue) return toast("Nusxa olish uchun matn yo'q");
+      try {
+        await navigator.clipboard.writeText(textValue);
+        toast("Nusxalandi", "success");
+      } catch {
+        toast("Clipboardga nusxalab bo'lmadi", "error");
+      }
+    }
+
+    async function shareMessageFlow(message) {
+      const shareText = (message?.text || "").trim() || `Media: ${message?.mediaUrl || ""}`;
+      const sharePayload = {
+        title: `${chat.name} xabari`,
+        text: shareText,
+        url: window.location.href,
+      };
+      try {
+        if (navigator.share) {
+          await navigator.share(sharePayload);
+          return;
+        }
+      } catch {}
+      await copyMessageFlow({ text: `${shareText}\n${window.location.href}` });
+    }
+
+    function openActionMenu(messageId, anchor) {
+      if (!actionMenu) return;
+      const message = findMessage(messageId);
+      if (!message) return;
+      actionMessageId = messageId;
+      const editButton = document.getElementById("message-action-edit");
+      if (editButton) {
+        const canEdit = message.sender?.id === state.me?.id;
+        editButton.style.display = canEdit ? "" : "none";
+      }
+      actionMenu.classList.remove("hide");
+      const rect = anchor.getBoundingClientRect();
+      const top = window.scrollY + rect.bottom + 8;
+      const left = window.scrollX + Math.max(8, Math.min(window.innerWidth - 280, rect.left));
+      actionMenu.style.top = `${top}px`;
+      actionMenu.style.left = `${left}px`;
+    }
+
+    function bindMessageInteractions() {
+      thread.querySelectorAll("[data-message-bubble]").forEach((node) => {
+        node.addEventListener("click", (event) => {
+          event.stopPropagation();
+          const messageId = node.dataset.messageBubble;
+          openActionMenu(messageId, node);
+        });
+      });
+      thread.querySelectorAll("[data-message-react]").forEach((button) => {
+        button.addEventListener("click", async (event) => {
+          event.stopPropagation();
+          try {
+            await toggleMessageReaction(button.dataset.messageReact, button.dataset.emoji);
+          } catch (error) {
+            toast(error.message, "error");
+          }
+        });
+      });
+    }
+
     function paintMessages(scrollToBottom = false) {
       thread.innerHTML = messages.length
         ? messages.map((message) => messageItem(message, chat.type)).join("")
         : emptyState("Xabar yo'q", "Pastdagi forma orqali birinchi xabarni yuboring.");
+      bindMessageInteractions();
       if (scrollToBottom) {
         window.requestAnimationFrame(() => {
           thread.scrollTop = thread.scrollHeight;
@@ -4666,6 +7158,7 @@
       const shouldStick = forceScroll || nearBottom();
       const fresh = await api(`/api/chats/${chatId}/messages`);
       messages = fresh.messages || [];
+      closeActionMenu();
       paintMessages(shouldStick);
     }
 
@@ -5012,6 +7505,61 @@
       syncTextareaHeight(textInput);
     });
 
+    actionMenu?.querySelectorAll("[data-message-quick-react]").forEach((button) => {
+      button.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        if (!actionMessageId) return;
+        try {
+          await toggleMessageReaction(actionMessageId, button.dataset.messageQuickReact);
+          closeActionMenu();
+        } catch (error) {
+          toast(error.message, "error");
+        }
+      });
+    });
+
+    actionMenu?.querySelectorAll("[data-message-action]").forEach((button) => {
+      button.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        const message = findMessage(actionMessageId);
+        if (!message) {
+          closeActionMenu();
+          return;
+        }
+        try {
+          if (button.dataset.messageAction === "reply") {
+            replyTarget = message;
+            paintReplyPreview();
+            closeActionMenu();
+            textInput.focus();
+            return;
+          }
+          if (button.dataset.messageAction === "copy") {
+            await copyMessageFlow(message);
+            closeActionMenu();
+            return;
+          }
+          if (button.dataset.messageAction === "share") {
+            await shareMessageFlow(message);
+            closeActionMenu();
+            return;
+          }
+          if (button.dataset.messageAction === "edit") {
+            if (message.sender?.id !== state.me?.id) return;
+            await editMessageFlow(message);
+            closeActionMenu();
+            return;
+          }
+        } catch (error) {
+          toast(error.message, "error");
+        }
+      });
+    });
+
+    document.addEventListener("click", () => {
+      closeActionMenu();
+    });
+
     groupMenuButton?.addEventListener("click", () => {
       if (groupMenuLayer?.classList.contains("hide")) openGroupMenu();
       else closeGroupMenu();
@@ -5058,12 +7606,15 @@
             text: textInput.value.trim(),
             mediaUrl: uploaded ? uploaded.url : "",
             mediaType: uploaded ? "image" : "",
+            replyToId: replyTarget?.id || "",
           },
         });
         textInput.value = "";
         textInput.style.height = "54px";
         selectedFile = null;
+        replyTarget = null;
         fileInput.value = "";
+        paintReplyPreview();
         paintPreview();
         await refreshMessages(true);
       } catch (error) {
@@ -5076,6 +7627,7 @@
     window.addEventListener("pagehide", leaveCallKeepAlive, { once: true });
     updateCallButton();
     updateCallControls();
+    paintReplyPreview();
     renderGroupHub();
     renderAttendance();
     paintMessages(true);
@@ -5128,7 +7680,7 @@
         return;
       }
 
-      if (!isProtectedPage()) {
+      if (page === "login") {
         clearPolling();
         if (state.token) {
           try {
@@ -5139,6 +7691,49 @@
             clearToken();
           }
         }
+        await renderLoginPage();
+        return;
+      }
+
+      if (page === "register") {
+        clearPolling();
+        if (state.token) {
+          try {
+            await loadMe();
+            window.location.replace(routes.dashboard);
+            return;
+          } catch (error) {
+            clearToken();
+          }
+        }
+        await renderRegisterPage();
+        return;
+      }
+
+      if (page === "videos") {
+        await renderVideosPage();
+        return;
+      }
+      if (page === "video") {
+        await renderVideoDetailPage();
+        return;
+      }
+      if (page === "profile") {
+        await renderProfilePage();
+        return;
+      }
+
+      if (page === "payment") {
+        if (!state.token) {
+          window.location.replace(routes.login);
+          return;
+        }
+        await renderPaymentPage();
+        return;
+      }
+
+      if (!isProtectedPage()) {
+        clearPolling();
         await renderLoginPage();
         return;
       }
@@ -5186,10 +7781,6 @@
       }
       if (page === "search") {
         await renderSearchPage();
-        return;
-      }
-      if (page === "profile") {
-        await renderProfilePage();
         return;
       }
       if (page === "ai") {

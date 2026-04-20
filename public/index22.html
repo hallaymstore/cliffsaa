@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="uz" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cliffs O'quv Markazi</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&amp;family=Merriweather:wght@600;700;800&amp;display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { font-family: 'Poppins', sans-serif; }
+
+    .hero-gradient {
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 40%, #1f1f1f 70%, #0f0f0f 100%);
+    }
+
+    .accent-line {
+      width: 60px; height: 3px;
+    }
+
+    .card-hover {
+      transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-8px);
+    }
+
+    .fade-up {
+      opacity: 0; transform: translateY(30px);
+      animation: fadeUp 0.7s ease forwards;
+    }
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .stagger-1 { animation-delay: 0.1s; }
+    .stagger-2 { animation-delay: 0.25s; }
+    .stagger-3 { animation-delay: 0.4s; }
+    .stagger-4 { animation-delay: 0.55s; }
+
+    .glass-card {
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .glow-dot {
+      position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.3; pointer-events: none;
+    }
+
+    .nav-link { position: relative; }
+    .nav-link::after {
+      content: ''; position: absolute; bottom: -2px; left: 0; width: 0; height: 2px;
+      transition: width 0.3s ease;
+    }
+    .nav-link:hover::after { width: 100%; }
+
+    .btn-primary {
+      position: relative; overflow: hidden; transition: all 0.3s ease;
+    }
+    .btn-primary::before {
+      content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      transition: left 0.5s ease;
+    }
+    .btn-primary:hover::before { left: 100%; }
+
+    .icon-wrap {
+      width: 80px; height: 80px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+      transition: transform 0.3s ease;
+    }
+    .card-hover:hover .icon-wrap { transform: scale(1.1) rotate(-3deg); }
+
+    .course-img {
+      width: 100%; height: 200px; object-fit: cover; border-radius: 12px 12px 0 0;
+    }
+
+    .teacher-img {
+      width: 100%; height: 250px; object-fit: cover; border-radius: 12px;
+    }
+
+    .stat-num { font-family: 'Merriweather', serif; }
+
+    .scroll-wrap {
+      height: 100%; overflow-y: auto; overflow-x: hidden;
+    }
+
+    .course-level {
+      display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full">
+  <div class="scroll-wrap" id="app"><!-- NAV -->
+   <nav class="fixed top-0 left-0 w-full z-50 transition-all duration-300" id="navbar">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between"><a href="#home" class="flex items-center gap-2">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center" id="logo-box" style="background:#ff8c42;"><span class="text-white font-bold text-lg" style="font-family:'Merriweather',serif;">C</span>
+      </div><span class="text-white font-bold text-xl tracking-tight" id="nav-brand">Cliffs</span> </a>
+     <div class="hidden md:flex items-center gap-8"><a href="#home" class="nav-link text-white/70 hover:text-white text-sm font-medium transition">Bosh sahifa</a> <a href="#about" class="nav-link text-white/70 hover:text-white text-sm font-medium transition">Haqida</a> <a href="#courses" class="nav-link text-white/70 hover:text-white text-sm font-medium transition">Kurslar</a> <a href="#teachers" class="nav-link text-white/70 hover:text-white text-sm font-medium transition">O'qituvchilar</a> <a href="/login" class="nav-link px-4 py-2 rounded-lg text-white text-sm font-medium transition" style="background:#ff8c42;">Kirish</a>
+     </div><button class="md:hidden text-white" id="menu-btn"><i data-lucide="menu" style="width:24px;height:24px;"></i></button>
+    </div><!-- Mobile menu -->
+    <div class="hidden md:hidden px-6 pb-4 flex-col gap-3" id="mobile-menu"><a href="#home" class="text-white/80 text-sm py-2 border-b border-white/10">Bosh sahifa</a> <a href="#about" class="text-white/80 text-sm py-2 border-b border-white/10">Haqida</a> <a href="#courses" class="text-white/80 text-sm py-2 border-b border-white/10">Kurslar</a> <a href="#teachers" class="text-white/80 text-sm py-2 border-b border-white/10">O'qituvchilar</a> <a href="#login" class="text-white/80 text-sm py-2">Kirish</a>
+    </div>
+   </nav><!-- HERO -->
+   <section class="hero-gradient relative min-h-[600px] flex items-center overflow-hidden" style="padding-top:100px;padding-bottom:80px;">
+    <div class="glow-dot" style="width:400px;height:400px;background:#ff8c42;top:-100px;right:-100px;"></div>
+    <div class="glow-dot" style="width:300px;height:300px;background:#6366f1;bottom:-80px;left:-60px;"></div>
+    <div class="max-w-7xl mx-auto px-6 w-full relative z-10">
+     <div class="max-w-2xl">
+      <div class="fade-up stagger-1 flex items-center gap-3 mb-6">
+       <div class="accent-line rounded-full" id="accent-line" style="background:#ff8c42;"></div><span class="text-white/60 text-sm font-medium tracking-widest uppercase">O'quv Markazi</span>
+      </div>
+      <h1 class="fade-up stagger-2 text-5xl md:text-7xl font-800 text-white leading-tight mb-6" id="hero-title" style="font-family:'Merriweather',serif;">Cliffs<br><span id="hero-title-span" style="color:#ff8c42;">O'quv Markazi</span></h1>
+      <p class="fade-up stagger-3 text-white/60 text-lg md:text-xl leading-relaxed mb-10 max-w-lg" id="hero-subtitle">Sifatli ta'lim va professional o'qituvchilar bilan bilim timsali yumshoq uyingizda.</p>
+      <div class="fade-up stagger-4 flex flex-wrap gap-4"><a href="#contact" class="btn-primary inline-flex items-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-sm tracking-wide" id="cta-btn" style="background:#ff8c42;"> <span id="cta-text">Ro'yxatdan o'tish</span> <i data-lucide="arrow-right" style="width:18px;height:18px;"></i> </a> <a href="#login" onclick="document.getElementById('login-modal').classList.remove('hidden')" class="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-sm tracking-wide glass-card hover:bg-white/10 transition"> Kirish </a>
+      </div>
+     </div>
+    </div>
+   </section><!-- ABOUT -->
+   <section id="about" class="py-20 px-6" style="background:#f5f3f0;">
+    <div class="max-w-7xl mx-auto">
+     <div class="grid md:grid-cols-2 gap-16 items-center">
+      <div>
+       <div class="flex items-center gap-3 mb-4">
+        <div class="accent-line rounded-full" style="background:#ff8c42;"></div><span class="text-sm font-semibold tracking-widest uppercase" style="color:#ff8c42;">Biz haqimizda</span>
+       </div>
+       <h2 class="text-4xl md:text-5xl font-bold mb-6 leading-tight" id="about-title" style="font-family:'Merriweather',serif;color:#1a1a1a;">Ilm orqali<br>
+         kuchli kelajak</h2>
+       <p class="text-lg leading-relaxed mb-8" id="about-text" style="color:#555;">Cliffs O'quv Markazi — bu yuqori sifatli ta'limning muassasasi. Biz har bir o'quvchiga shaxsiy yondashib, ulaming ehtiyojlari va maqsadlariga muvofiq dastur tayyorlaymiz. 10 yildan ortiq tajribamiz bilan minglab o'quvchini muvaffaqiyatga olib keldik.</p>
+       <div class="flex gap-6">
+        <div class="flex items-center gap-3">
+         <i data-lucide="check-circle" style="width:20px;height:20px;color:#ff8c42;"></i><span class="text-sm font-medium" style="color:#333;">Tajribali o'qituvchilar</span>
+        </div>
+        <div class="flex items-center gap-3">
+         <i data-lucide="check-circle" style="width:20px;height:20px;color:#ff8c42;"></i><span class="text-sm font-medium" style="color:#333;">Zamonaviy metodika</span>
+        </div>
+       </div>
+      </div>
+      <div class="relative">
+       <div class="rounded-3xl p-8 relative overflow-hidden" style="background: linear-gradient(135deg, #2d2416, #1a1a1a);">
+        <div class="grid grid-cols-2 gap-4">
+         <div class="glass-card rounded-2xl p-6 text-center">
+          <div class="stat-num text-4xl font-bold mb-1" style="color:#ff8c42;">
+           10+
+          </div>
+          <div class="text-white/50 text-sm">
+           Yillik tajriba
+          </div>
+         </div>
+         <div class="glass-card rounded-2xl p-6 text-center">
+          <div class="stat-num text-4xl font-bold mb-1" style="color:#ff8c42;">
+           1000+
+          </div>
+          <div class="text-white/50 text-sm">
+           O'quvchilar
+          </div>
+         </div>
+         <div class="glass-card rounded-2xl p-6 text-center">
+          <div class="stat-num text-4xl font-bold mb-1" style="color:#ff8c42;">
+           98%
+          </div>
+          <div class="text-white/50 text-sm">
+           Muvaffaqiyat
+          </div>
+         </div>
+         <div class="glass-card rounded-2xl p-6 text-center">
+          <div class="stat-num text-4xl font-bold mb-1" style="color:#ff8c42;">
+           25+
+          </div>
+          <div class="text-white/50 text-sm">
+           Kurslar
+          </div>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div>
+   </section><!-- COURSES -->
+   <section id="courses" class="py-20 px-6" style="background:#ffffff;">
+    <div class="max-w-7xl mx-auto">
+     <div class="text-center mb-16">
+      <div class="flex items-center justify-center gap-3 mb-4">
+       <div class="accent-line rounded-full" style="background:#ff8c42;"></div><span class="text-sm font-semibold tracking-widest uppercase" style="color:#ff8c42;">Dasturlar</span>
+      </div>
+      <h2 class="text-4xl md:text-5xl font-bold" id="courses-title" style="font-family:'Merriweather',serif;color:#1a1a1a;">Bizning kurslar</h2>
+     </div>
+     <div class="grid md:grid-cols-3 gap-8">
+      <div class="card-hover rounded-2xl overflow-hidden border border-gray-200" style="background:#fafaf8;">
+       <svg class="course-img" style="background: linear-gradient(135deg, #ff8c42, #ffb366);" viewbox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+        <rect width="300" height="200" fill="url(#grad1)" /> <circle cx="150" cy="100" r="40" fill="rgba(255,255,255,0.2)" /> <path d="M120 80L180 80L180 130Q150 150 120 130Z" fill="rgba(255,255,255,0.3)" stroke="white" stroke-width="2" /> <defs>
+         <lineargradient id="grad1">
+          <stop offset="0%" style="stop-color:#ff8c42" />
+          <stop offset="100%" style="stop-color:#ffb366" />
+         </lineargradient>
+        </defs>
+       </svg>
+       <div class="p-6">
+        <div class="course-level" style="background:#ff8c4220;color:#ff8c42;">
+         Boshlang'ich
+        </div>
+        <h3 class="text-xl font-bold mb-3 mt-4" style="color:#1a1a1a;">Matematika</h3>
+        <p class="leading-relaxed text-sm mb-4" style="color:#777;">Asosiy matematika bilimlarini o'zlashtirib, muammolarni yechish ko'nikmalarini rivojlantirish.</p>
+        <div class="flex items-center gap-2 text-sm" style="color:#ff8c42;"><i data-lucide="clock" style="width:16px;height:16px;"></i> 3 oy
+        </div>
+       </div>
+      </div>
+      <div class="card-hover rounded-2xl overflow-hidden border border-gray-200" style="background:#fafaf8;">
+       <svg class="course-img" style="background: linear-gradient(135deg, #ff8c42, #ffb366);" viewbox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+        <rect width="300" height="200" fill="url(#grad2)" /> <circle cx="100" cy="100" r="25" fill="rgba(255,255,255,0.2)" /> <circle cx="200" cy="100" r="25" fill="rgba(255,255,255,0.2)" /> <line x1="50" y1="50" x2="250" y2="150" stroke="white" stroke-width="3" stroke-opacity="0.3" /> <defs>
+         <lineargradient id="grad2">
+          <stop offset="0%" style="stop-color:#ff8c42" />
+          <stop offset="100%" style="stop-color:#ffb366" />
+         </lineargradient>
+        </defs>
+       </svg>
+       <div class="p-6">
+        <div class="course-level" style="background:#ff8c4220;color:#ff8c42;">
+         O'rta
+        </div>
+        <h3 class="text-xl font-bold mb-3 mt-4" style="color:#1a1a1a;">Ingliz tili</h3>
+        <p class="leading-relaxed text-sm mb-4" style="color:#777;">Gapirish, tinglash, o'qish va yozish ko'nikmalarini kompleks rivojlantirish.</p>
+        <div class="flex items-center gap-2 text-sm" style="color:#ff8c42;"><i data-lucide="clock" style="width:16px;height:16px;"></i> 4 oy
+        </div>
+       </div>
+      </div>
+      <div class="card-hover rounded-2xl overflow-hidden border border-gray-200" style="background:#fafaf8;">
+       <svg class="course-img" style="background: linear-gradient(135deg, #ff8c42, #ffb366);" viewbox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+        <rect width="300" height="200" fill="url(#grad3)" /> <rect x="80" y="60" width="140" height="80" fill="none" stroke="white" stroke-width="2" stroke-opacity="0.5" /> <rect x="100" y="80" width="100" height="40" fill="rgba(255,255,255,0.2)" /> <defs>
+         <lineargradient id="grad3">
+          <stop offset="0%" style="stop-color:#ff8c42" />
+          <stop offset="100%" style="stop-color:#ffb366" />
+         </lineargradient>
+        </defs>
+       </svg>
+       <div class="p-6">
+        <div class="course-level" style="background:#ff8c4220;color:#ff8c42;">
+         Yuqori
+        </div>
+        <h3 class="text-xl font-bold mb-3 mt-4" style="color:#1a1a1a;">Kompyuter</h3>
+        <p class="leading-relaxed text-sm mb-4" style="color:#777;">Dasturlash asoslari, veb-dizayn va IT texnologiyalarini o'rganish.</p>
+        <div class="flex items-center gap-2 text-sm" style="color:#ff8c42;"><i data-lucide="clock" style="width:16px;height:16px;"></i> 5 oy
+        </div>
+       </div>
+      </div>
+     </div>
+    </div>
+   </section><!-- TEACHERS -->
+   <section id="teachers" class="py-20 px-6" style="background:#f9f7f4;">
+    <div class="max-w-7xl mx-auto">
+     <div class="text-center mb-16">
+      <div class="flex items-center justify-center gap-3 mb-4">
+       <div class="accent-line rounded-full" style="background:#ff8c42;"></div><span class="text-sm font-semibold tracking-widest uppercase" style="color:#ff8c42;">Jamoa</span>
+      </div>
+      <h2 class="text-4xl md:text-5xl font-bold" id="teachers-title" style="font-family:'Merriweather',serif;color:#1a1a1a;">Bizning o'qituvchilar</h2>
+     </div>
+     <div class="grid md:grid-cols-4 gap-8">
+      <div class="card-hover text-center">
+       <svg class="teacher-img" style="background: linear-gradient(135deg, #ff8c42, #ffb366);" viewbox="0 0 200 250" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+         <lineargradient id="teach1">
+          <stop offset="0%" style="stop-color:#ff8c42" />
+          <stop offset="100%" style="stop-color:#ffb366" />
+         </lineargradient>
+        </defs> <circle cx="100" cy="80" r="35" fill="rgba(255,255,255,0.3)" /> <ellipse cx="100" cy="160" rx="45" ry="50" fill="rgba(255,255,255,0.2)" />
+       </svg>
+       <div class="mt-6">
+        <h3 class="text-xl font-bold" style="color:#1a1a1a;">Fotima Abdullayeva</h3>
+        <p class="text-sm" style="color:#ff8c42;font-weight:600;">Matematika ustozası</p>
+        <p class="text-sm mt-2" style="color:#777;">15 yillik tajriba</p>
+       </div>
+      </div>
+      <div class="card-hover text-center">
+       <svg class="teacher-img" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);" viewbox="0 0 200 250" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+         <lineargradient id="teach2">
+          <stop offset="0%" style="stop-color:#6366f1" />
+          <stop offset="100%" style="stop-color:#8b5cf6" />
+         </lineargradient>
+        </defs> <circle cx="100" cy="80" r="35" fill="rgba(255,255,255,0.3)" /> <ellipse cx="100" cy="160" rx="45" ry="50" fill="rgba(255,255,255,0.2)" />
+       </svg>
+       <div class="mt-6">
+        <h3 class="text-xl font-bold" style="color:#1a1a1a;">Karim Rashulov</h3>
+        <p class="text-sm" style="color:#6366f1;font-weight:600;">Ingliz tili ustozasi</p>
+        <p class="text-sm mt-2" style="color:#777;">12 yillik tajriba</p>
+       </div>
+      </div>
+      <div class="card-hover text-center">
+       <svg class="teacher-img" style="background: linear-gradient(135deg, #14b8a6, #10b981);" viewbox="0 0 200 250" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+         <lineargradient id="teach3">
+          <stop offset="0%" style="stop-color:#14b8a6" />
+          <stop offset="100%" style="stop-color:#10b981" />
+         </lineargradient>
+        </defs> <circle cx="100" cy="80" r="35" fill="rgba(255,255,255,0.3)" /> <ellipse cx="100" cy="160" rx="45" ry="50" fill="rgba(255,255,255,0.2)" />
+       </svg>
+       <div class="mt-6">
+        <h3 class="text-xl font-bold" style="color:#1a1a1a;">Nargiza Hasanova</h3>
+        <p class="text-sm" style="color:#14b8a6;font-weight:600;">Kompyuter ustozasi</p>
+        <p class="text-sm mt-2" style="color:#777;">8 yillik tajriba</p>
+       </div>
+      </div>
+      <div class="card-hover text-center">
+       <svg class="teacher-img" style="background: linear-gradient(135deg, #f43f5e, #ec4899);" viewbox="0 0 200 250" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+         <lineargradient id="teach4">
+          <stop offset="0%" style="stop-color:#f43f5e" />
+          <stop offset="100%" style="stop-color:#ec4899" />
+         </lineargradient>
+        </defs> <circle cx="100" cy="80" r="35" fill="rgba(255,255,255,0.3)" /> <ellipse cx="100" cy="160" rx="45" ry="50" fill="rgba(255,255,255,0.2)" />
+       </svg>
+       <div class="mt-6">
+        <h3 class="text-xl font-bold" style="color:#1a1a1a;">Bekzod O'smanov</h3>
+        <p class="text-sm" style="color:#f43f5e;font-weight:600;">Tarix ustozasi</p>
+        <p class="text-sm mt-2" style="color:#777;">11 yillik tajriba</p>
+       </div>
+      </div>
+     </div>
+    </div>
+   </section><!-- STATS -->
+   <section id="stats" class="py-20 px-6" style="background:#ff8c42;">
+    <div class="max-w-7xl mx-auto text-center">
+     <h2 class="text-4xl md:text-5xl font-bold text-white mb-16" style="font-family:'Merriweather',serif;">Bizning natijalarimiz</h2>
+     <div class="grid md:grid-cols-4 gap-8">
+      <div>
+       <div class="stat-num text-5xl font-bold text-white mb-2">
+        10+
+       </div>
+       <p class="text-white/80 text-lg">Yillik tajriba</p>
+      </div>
+      <div>
+       <div class="stat-num text-5xl font-bold text-white mb-2">
+        5000+
+       </div>
+       <p class="text-white/80 text-lg">Baxtli o'quvchilar</p>
+      </div>
+      <div>
+       <div class="stat-num text-5xl font-bold text-white mb-2">
+        98%
+       </div>
+       <p class="text-white/80 text-lg">Mamnun mijozlar</p>
+      </div>
+      <div>
+       <div class="stat-num text-5xl font-bold text-white mb-2">
+        25+
+       </div>
+       <p class="text-white/80 text-lg">Qayta yo'naltirilgan</p>
+      </div>
+     </div>
+    </div>
+   </section><!-- CONTACT -->
+   <section id="contact" class="py-20 px-6" style="background:#1a1a1a;">
+    <div class="max-w-3xl mx-auto text-center">
+     <div class="flex items-center justify-center gap-3 mb-4">
+      <div class="accent-line rounded-full" style="background:#ff8c42;"></div><span class="text-sm font-semibold tracking-widest uppercase" style="color:#ff8c42;">Aloqa</span>
+     </div>
+     <h2 class="text-4xl md:text-5xl font-bold text-white mb-6" id="contact-title" style="font-family:'Merriweather',serif;">Ro'yxatdan o'ting</h2>
+     <p class="text-white/50 mb-12 text-lg">Bugundan o'quv yo'lini boshlang va bilimning kapitaliga ega bo'ling.</p>
+     <form id="contact-form" class="glass-card rounded-3xl p-8 md:p-12 text-left">
+      <div class="grid md:grid-cols-2 gap-6 mb-6">
+       <div><label class="block text-white/60 text-sm mb-2 font-medium" for="cf-name">Ismi-familya</label> <input id="cf-name" type="text" placeholder="To'liq ismingizni kiriting" class="w-full px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#ff8c42] transition">
+       </div>
+       <div><label class="block text-white/60 text-sm mb-2 font-medium" for="cf-email">Email</label> <input id="cf-email" type="email" placeholder="email@example.com" class="w-full px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#ff8c42] transition">
+       </div>
+      </div>
+      <div class="grid md:grid-cols-2 gap-6 mb-6">
+       <div><label class="block text-white/60 text-sm mb-2 font-medium" for="cf-phone">Telefon</label> <input id="cf-phone" type="tel" placeholder="+998 (99) 123-45-67" class="w-full px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#ff8c42] transition">
+       </div>
+       <div><label class="block text-white/60 text-sm mb-2 font-medium" for="cf-course">Tanlang</label> <select id="cf-course" class="w-full px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-[#ff8c42] transition"> <option value="" style="background:#1a1a1a;color:#fff;">Kurs tanlang</option> <option value="Matematika" style="background:#1a1a1a;color:#fff;">Matematika</option> <option value="Ingliz tili" style="background:#1a1a1a;color:#fff;">Ingliz tili</option> <option value="Kompyuter" style="background:#1a1a1a;color:#fff;">Kompyuter</option> </select>
+       </div>
+      </div>
+      <div class="mb-6"><label class="block text-white/60 text-sm mb-2 font-medium" for="cf-msg">Xabar</label> <textarea id="cf-msg" rows="4" placeholder="Qo'shimcha ma'lumot yoki savollar..." class="w-full px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#ff8c42] transition resize-none"></textarea>
+      </div><button type="submit" class="btn-primary w-full py-4 rounded-xl text-white font-semibold text-sm tracking-wide" style="background:#ff8c42;">Ro'yxatdan o'tish</button>
+      <div id="form-msg" class="mt-4 text-center text-sm hidden"></div>
+     </form><!-- FOOTER -->
+     <footer class="py-12 px-6 border-t border-white/5" style="background:#0f0f0f;">
+      <div class="max-w-7xl mx-auto">
+       <div class="grid md:grid-cols-4 gap-12 mb-12">
+        <div>
+         <div class="flex items-center gap-2 mb-6">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:#ff8c42;"><span class="text-white font-bold" style="font-family:'Merriweather',serif;">C</span>
+          </div><span class="text-white font-bold tracking-tight">Cliffs</span>
+         </div>
+         <p class="text-white/40 text-sm leading-relaxed">Sifatli ta'lim orqali kelajakni qurish.</p>
+        </div>
+        <div>
+         <h4 class="text-white font-semibold mb-4 text-sm">Navigatsiya</h4>
+         <ul class="space-y-2">
+          <li><a href="#home" class="text-white/40 hover:text-[#ff8c42] text-sm transition">Bosh sahifa</a></li>
+          <li><a href="#about" class="text-white/40 hover:text-[#ff8c42] text-sm transition">Haqida</a></li>
+          <li><a href="#courses" class="text-white/40 hover:text-[#ff8c42] text-sm transition">Kurslar</a></li>
+          <li><a href="#teachers" class="text-white/40 hover:text-[#ff8c42] text-sm transition">O'qituvchilar</a></li>
+         </ul>
+        </div>
+        <div>
+         <h4 class="text-white font-semibold mb-4 text-sm">Aloqa</h4>
+         <ul class="space-y-2">
+          <li><a href="tel:+998901234567" class="text-white/40 hover:text-[#ff8c42] text-sm transition flex items-center gap-2"><i data-lucide="phone" style="width:16px;height:16px;"></i>+998 88 766 08 00</a></li>
+          <li><a href="mailto:info@cliffsaa.uz" class="text-white/40 hover:text-[#ff8c42] text-sm transition flex items-center gap-2"><i data-lucide="mail" style="width:16px;height:16px;"></i>hello@hallaym.com</a></li>
+          <li class="text-white/40 text-sm flex items-center gap-2"><i data-lucide="map-pin" style="width:16px;height:16px;"></i>Toshkent, O'zbekiston</li>
+         </ul>
+        </div>
+        <div>
+         <h4 class="text-white font-semibold mb-4 text-sm">Ijtimoiy tarmoqlar</h4>
+         <div class="flex items-center gap-4"><a href="#" target="_blank" rel="noopener noreferrer" class="text-white/40 hover:text-[#ff8c42] transition"><i data-lucide="facebook" style="width:20px;height:20px;"></i></a> <a href="#" target="_blank" rel="noopener noreferrer" class="text-white/40 hover:text-[#ff8c42] transition"><i data-lucide="instagram" style="width:20px;height:20px;"></i></a> <a href="#" target="_blank" rel="noopener noreferrer" class="text-white/40 hover:text-[#ff8c42] transition"><i data-lucide="youtube" style="width:20px;height:20px;"></i></a>
+         </div>
+        </div>
+       </div>
+       <div class="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4"><span class="text-white/30 text-xs">© 2026 Cliffs O'quv Markazi. Barcha huquqlar himoyalangan.</span>
+        <div class="flex items-center gap-6"><a href="#" class="text-white/30 hover:text-white/60 text-xs transition">Maxfiylik siyosati</a> <a href="#" class="text-white/30 hover:text-white/60 text-xs transition">Foydalanish shartlari</a>
+        </div>
+       </div>
+      </div>
+     </footer><!-- LOGIN MODAL -->
+     <div id="login-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+      <div class="bg-[#1a1a1a] rounded-3xl border border-white/10 w-full max-w-md p-8 relative"><button onclick="document.getElementById('login-modal').classList.add('hidden')" class="absolute top-6 right-6 text-white/40 hover:text-white transition"><i data-lucide="x" style="width:24px;height:24px;"></i></button>
+       <h3 class="text-2xl font-bold text-white mb-2 text-center" style="font-family:'Merriweather',serif;">Akkauntga kirish</h3>
+       <p class="text-white/50 text-sm text-center mb-8">Email va parol bilan akkauntingizga kiring</p>
+       <form id="login-form" class="space-y-4">
+        <div><label class="block text-white/60 text-sm mb-2 font-medium" for="login-email">Email</label> <input id="login-email" type="email" placeholder="email@example.com" required class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#ff8c42] transition">
+        </div>
+        <div><label class="block text-white/60 text-sm mb-2 font-medium" for="login-pass">Parol</label> <input id="login-pass" type="password" placeholder="••••••••" required class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#ff8c42] transition">
+        </div><button type="submit" class="w-full py-3 rounded-xl text-white font-semibold text-sm tracking-wide" style="background:#ff8c42;">Kirish</button>
+        <div id="login-msg" class="text-sm text-center hidden"></div>
+       </form>
+       <p class="text-white/50 text-sm text-center mt-6">Akkaunt yo'qmi? <a href="#register" onclick="document.getElementById('login-modal').classList.add('hidden'); document.getElementById('register-modal').classList.remove('hidden')" class="text-[#ff8c42] hover:text-[#ffb366] font-semibold">Ro'yxatdan o'ting</a></p>
+      </div>
+     </div><!-- REGISTER MODAL -->
+     <div id="register-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+      <div class="bg-[#1a1a1a] rounded-3xl border border-white/10 w-full max-w-md p-8 relative"><button onclick="document.getElementById('register-modal').classList.add('hidden')" class="absolute top-6 right-6 text-white/40 hover:text-white transition"><i data-lucide="x" style="width:24px;height:24px;"></i></button>
+       <h3 class="text-2xl font-bold text-white mb-2 text-center" style="font-family:'Merriweather',serif;">Yangi akkaunt</h3>
+       <p class="text-white/50 text-sm text-center mb-8">Kursga ro'yxatdan o'tish uchun ma'lumot kiriting</p>
+       <form id="register-form" class="space-y-4">
+        <div><label class="block text-white/60 text-sm mb-2 font-medium" for="reg-name">F.I.O</label> <input id="reg-name" type="text" placeholder="To'liq ismingizni kiriting" required class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#ff8c42] transition">
+        </div>
+        <div><label class="block text-white/60 text-sm mb-2 font-medium" for="reg-email">Email</label> <input id="reg-email" type="email" placeholder="email@example.com" required class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#ff8c42] transition">
+        </div>
+        <div><label class="block text-white/60 text-sm mb-2 font-medium" for="reg-phone">Telefon</label> <input id="reg-phone" type="tel" placeholder="+998 (99) 123-45-67" required class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#ff8c42] transition">
+        </div>
+        <div><label class="block text-white/60 text-sm mb-2 font-medium" for="reg-course">Kursni tanlang</label> <select id="reg-course" required class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-[#ff8c42] transition"> <option value="" style="background:#1a1a1a;color:#fff;">Kurs tanlang</option> <option value="Matematika" style="background:#1a1a1a;color:#fff;">Matematika</option> <option value="Ingliz tili" style="background:#1a1a1a;color:#fff;">Ingliz tili</option> <option value="Kompyuter" style="background:#1a1a1a;color:#fff;">Kompyuter</option> </select>
+        </div>
+        <div><label class="block text-white/60 text-sm mb-2 font-medium" for="reg-pass">Parol</label> <input id="reg-pass" type="password" placeholder="••••••••" required class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-sm focus:outline-none focus:border-[#ff8c42] transition">
+        </div><button type="submit" class="w-full py-3 rounded-xl text-white font-semibold text-sm tracking-wide" style="background:#ff8c42;">Ro'yxatdan o'tish</button>
+        <div id="register-msg" class="text-sm text-center hidden"></div>
+       </form>
+       <p class="text-white/50 text-sm text-center mt-6">Allaqachon akkauntingiz bormi? <a href="#login" onclick="document.getElementById('register-modal').classList.add('hidden'); document.getElementById('login-modal').classList.remove('hidden')" class="text-[#ff8c42] hover:text-[#ffb366] font-semibold">Kirish</a></p>
+      </div>
+     </div>
+    </div>
+    <script>
+  let registrations = [];
+
+  // Initialize Data SDK
+  async function initDataSDK() {
+    const handler = {
+      onDataChanged(data) {
+        registrations = data;
+      }
+    };
+    const result = await window.dataSdk.init(handler);
+    if (!result.isOk) console.error('Data SDK init failed');
+  }
+
+  if (window.dataSdk) initDataSDK();
+
+  const defaultConfig = {
+    hero_title: 'Cliffs',
+    hero_subtitle: 'Sifatli ta\'lim va professional o\'qituvchilar bilan bilim timsali yumshoq uyingizda.',
+    cta_text: 'Ro\'yxatdan o\'tish',
+    about_title: 'Ilm orqali kuchli kelajak',
+    about_text: 'Cliffsaa O\'quv Markazi — bu yuqori sifatli ta\'limning muassasasi. Biz har bir o\'quvchiga shaxsiy yondashib, ulaming ehtiyojlari va maqsadlariga muvofiq dastur tayyorlaymiz.',
+    courses_title: 'Bizning kurslar',
+    teachers_title: 'Bizning o\'qituvchilar',
+    contact_title: 'Ro\'yxatdan o\'ting',
+    background_color: '#1a1a1a',
+    surface_color: '#f5f3f0',
+    text_color: '#1a1a1a',
+    primary_action_color: '#ff8c42',
+    secondary_action_color: '#6366f1',
+    font_family: 'Poppins',
+    font_size: 16
+  };
+
+  // Mobile menu
+  document.getElementById('menu-btn').addEventListener('click', () => {
+    const m = document.getElementById('mobile-menu');
+    m.classList.toggle('hidden');
+    m.style.display = m.classList.contains('hidden') ? 'none' : 'flex';
+  });
+
+  // Navbar scroll
+  const scrollWrap = document.getElementById('app');
+  scrollWrap.addEventListener('scroll', () => {
+    const nav = document.getElementById('navbar');
+    if (scrollWrap.scrollTop > 60) {
+      nav.style.background = 'rgba(26,26,26,0.95)';
+      nav.style.backdropFilter = 'blur(12px)';
+    } else {
+      nav.style.background = 'transparent';
+      nav.style.backdropFilter = 'none';
+    }
+  });
+
+  // Smooth scroll
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const href = a.getAttribute('href');
+      if (href === '#login') return;
+      e.preventDefault();
+      const t = document.querySelector(href);
+      if (t) t.scrollIntoView({ behavior: 'smooth' });
+      document.getElementById('mobile-menu').classList.add('hidden');
+      document.getElementById('mobile-menu').style.display = 'none';
+    });
+  });
+
+  // Login form
+  document.getElementById('login-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-pass').value;
+    const msg = document.getElementById('login-msg');
+    const user = registrations.find(r => r.email === email && r.__backendId);
+    if (user) {
+      msg.classList.remove('hidden');
+      msg.style.color = '#ff8c42';
+      msg.textContent = '✓ Kiriş muvaffaqiyatli! Xush kelibsiz, ' + user.full_name + '!';
+      setTimeout(() => {
+        document.getElementById('login-modal').classList.add('hidden');
+        e.target.reset();
+        msg.classList.add('hidden');
+      }, 2000);
+    } else {
+      msg.classList.remove('hidden');
+      msg.style.color = '#f43f5e';
+      msg.textContent = '✗ Email yoki parol noto\'g\'ri!';
+    }
+  });
+
+  // Register form
+  document.getElementById('register-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const name = document.getElementById('reg-name').value;
+    const email = document.getElementById('reg-email').value;
+    const phone = document.getElementById('reg-phone').value;
+    const course = document.getElementById('reg-course').value;
+    const msg = document.getElementById('register-msg');
+
+    if (registrations.length >= 999) {
+      msg.classList.remove('hidden');
+      msg.style.color = '#f43f5e';
+      msg.textContent = '✗ Ro\'yxat to\'la! Keyinroq urinib ko\'ring.';
+      return;
+    }
+
+    const result = await window.dataSdk.create({
+      id: Date.now().toString(),
+      full_name: name,
+      email: email,
+      phone: phone,
+      selected_course: course,
+      registration_date: new Date().toISOString(),
+      status: 'active'
+    });
+
+    if (result.isOk) {
+      msg.classList.remove('hidden');
+      msg.style.color = '#10b981';
+      msg.textContent = '✓ Ro\'yxatdan o\'tish muvaffaqiyatli! Tez orada biz siz bilan bog\'lanamiz.';
+      e.target.reset();
+      setTimeout(() => {
+        document.getElementById('register-modal').classList.add('hidden');
+        msg.classList.add('hidden');
+      }, 2500);
+    } else {
+      msg.classList.remove('hidden');
+      msg.style.color = '#f43f5e';
+      msg.textContent = '✗ Xatolik! Qayta urinib ko\'ring.';
+    }
+  });
+
+  // Contact form
+  document.getElementById('contact-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const name = document.getElementById('cf-name').value;
+    const email = document.getElementById('cf-email').value;
+    const phone = document.getElementById('cf-phone').value;
+    const course = document.getElementById('cf-course').value;
+    const msg = document.getElementById('form-msg');
+
+    if (registrations.length >= 999) {
+      msg.classList.remove('hidden');
+      msg.style.color = '#f43f5e';
+      msg.textContent = '✗ Ro\'yxat to\'la! Keyinroq urinib ko\'ring.';
+      return;
+    }
+
+    const result = await window.dataSdk.create({
+      id: Date.now().toString(),
+      full_name: name,
+      email: email,
+      phone: phone,
+      selected_course: course,
+      registration_date: new Date().toISOString(),
+      status: 'active'
+    });
+
+    if (result.isOk) {
+      msg.classList.remove('hidden');
+      msg.style.color = '#10b981';
+      msg.textContent = '✓ Ro\'yxatdan o\'tishingiz tugallandi! Tez orada biz siz bilan bog\'lanamiz.';
+      e.target.reset();
+      setTimeout(() => msg.classList.add('hidden'), 4000);
+    } else {
+      msg.classList.remove('hidden');
+      msg.style.color = '#f43f5e';
+      msg.textContent = '✗ Xatolik yuz berdi! Qayta urinib ko\'ring.';
+    }
+  });
+
+  // Element SDK
+  function applyConfig(config) {
+    const c = { ...defaultConfig, ...config };
+    const ff = c.font_family + ', sans-serif';
+    const hf = "Merriweather, serif";
+
+    document.getElementById('hero-title').innerHTML = c.hero_title + '<br><span id="hero-title-span" style="color:' + c.primary_action_color + ';">O\'quv Markazi</span>';
+    document.getElementById('hero-subtitle').textContent = c.hero_subtitle;
+    document.getElementById('cta-text').textContent = c.cta_text;
+    document.getElementById('about-title').innerHTML = c.about_title;
+    document.getElementById('about-text').textContent = c.about_text;
+    document.getElementById('courses-title').textContent = c.courses_title;
+    document.getElementById('teachers-title').textContent = c.teachers_title;
+    document.getElementById('contact-title').textContent = c.contact_title;
+
+    // Colors
+    document.getElementById('cta-btn').style.background = c.primary_action_color;
+    document.getElementById('logo-box').style.background = c.primary_action_color;
+    document.getElementById('accent-line').style.background = c.primary_action_color;
+    document.getElementById('hero-title-span').style.color = c.primary_action_color;
+
+    document.querySelectorAll('.icon-wrap').forEach(el => {
+      el.style.background = c.primary_action_color + '1f';
+    });
+    document.querySelectorAll('[data-lucide="check-circle"]').forEach(el => {
+      el.style.color = c.primary_action_color;
+    });
+    document.querySelectorAll('.accent-line').forEach(el => el.style.background = c.primary_action_color);
+    document.querySelectorAll('.course-level').forEach(el => {
+      el.style.background = c.primary_action_color + '20';
+      el.style.color = c.primary_action_color;
+    });
+    document.querySelector('button[type="submit"]').style.background = c.primary_action_color;
+
+    // Font
+    document.body.style.fontFamily = ff;
+    document.querySelectorAll('[style*="Merriweather"]').forEach(el => {
+      el.style.fontFamily = hf;
+    });
+    document.getElementById('hero-title').style.fontFamily = hf;
+    document.getElementById('about-title').style.fontFamily = hf;
+    document.getElementById('courses-title').style.fontFamily = hf;
+    document.getElementById('teachers-title').style.fontFamily = hf;
+    document.getElementById('contact-title').style.fontFamily = hf;
+
+    // Font size
+    const bs = c.font_size;
+    document.getElementById('hero-subtitle').style.fontSize = bs * 1.2 + 'px';
+    document.getElementById('about-text').style.fontSize = bs * 1.1 + 'px';
+  }
+
+  if (window.elementSdk) {
+    window.elementSdk.init({
+      defaultConfig,
+      onConfigChange: async (config) => applyConfig(config),
+      mapToCapabilities: (config) => {
+        const c = { ...defaultConfig, ...config };
+        return {
+          recolorables: [
+            { get: () => c.background_color, set: v => { c.background_color = v; window.elementSdk.setConfig({ background_color: v }); }},
+            { get: () => c.surface_color, set: v => { c.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); }},
+            { get: () => c.text_color, set: v => { c.text_color = v; window.elementSdk.setConfig({ text_color: v }); }},
+            { get: () => c.primary_action_color, set: v => { c.primary_action_color = v; window.elementSdk.setConfig({ primary_action_color: v }); }},
+            { get: () => c.secondary_action_color, set: v => { c.secondary_action_color = v; window.elementSdk.setConfig({ secondary_action_color: v }); }}
+          ],
+          borderables: [],
+          fontEditable: {
+            get: () => c.font_family || defaultConfig.font_family,
+            set: v => { c.font_family = v; window.elementSdk.setConfig({ font_family: v }); }
+          },
+          fontSizeable: {
+            get: () => c.font_size || defaultConfig.font_size,
+            set: v => { c.font_size = v; window.elementSdk.setConfig({ font_size: v }); }
+          }
+        };
+      },
+      mapToEditPanelValues: (config) => {
+        const c = { ...defaultConfig, ...config };
+        return new Map([
+          ['hero_title', c.hero_title],
+          ['hero_subtitle', c.hero_subtitle],
+          ['cta_text', c.cta_text],
+          ['about_title', c.about_title],
+          ['about_text', c.about_text],
+          ['courses_title', c.courses_title],
+          ['teachers_title', c.teachers_title],
+          ['contact_title', c.contact_title]
+        ]);
+      }
+    });
+  }
+
+  applyConfig(defaultConfig);
+  lucide.createIcons();
+</script>
+   </section>
+  </div>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ee0a4656740614a',t:'MTc3NjQ4MzU2NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
