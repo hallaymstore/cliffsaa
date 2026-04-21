@@ -4996,10 +4996,12 @@
               <div class="field"><label>Logo URL</label><input class="input" id="al-site-logo" value="${escapeHtml(site.logoUrl || "")}" placeholder="https://..."></div>
               <div class="field"><label>Favicon URL</label><input class="input" id="al-site-favicon" value="${escapeHtml(site.faviconUrl || "")}" placeholder="https://..."></div>
             </div>
+            <div class="field"><label>Footer logo URL</label><input class="input" id="al-site-footer-logo" value="${escapeHtml(site.footerLogoUrl || "")}" placeholder="https://..."></div>
             <div class="grid-2">
               <div class="field"><label>Logo fayli</label><input class="input" id="al-site-logo-file" type="file" accept="image/*"></div>
               <div class="field"><label>Favicon fayli</label><input class="input" id="al-site-favicon-file" type="file" accept="image/*"></div>
             </div>
+            <div class="field"><label>Footer logo fayli</label><input class="input" id="al-site-footer-logo-file" type="file" accept="image/*"></div>
             <div class="field"><label>Hero sarlavha</label><input class="input" id="al-site-hero-title" value="${escapeHtml(site.heroTitle || "")}"></div>
             <div class="field"><label>Hero matni</label><textarea class="textarea" id="al-site-hero-subtitle">${escapeHtml(site.heroSubtitle || "")}</textarea></div>
             <div class="grid-2">
@@ -5008,6 +5010,24 @@
             </div>
             <div class="field"><label>Hero rasm URL</label><input class="input" id="al-site-hero-image" value="${escapeHtml(site.heroImage || "")}" placeholder="https://..."></div>
             <div class="field"><label>Hero rasm fayli</label><input class="input" id="al-site-hero-file" type="file" accept="image/*"></div>
+            <div class="grid-2">
+              <div class="field"><label>About rasm URL</label><input class="input" id="al-site-about-image" value="${escapeHtml(site.aboutImage || "")}" placeholder="https://..."></div>
+              <div class="field"><label>Kurslar rasm URL</label><input class="input" id="al-site-courses-image" value="${escapeHtml(site.coursesImage || "")}" placeholder="https://..."></div>
+            </div>
+            <div class="grid-3">
+              <div class="field"><label>Ustozlar rasm URL</label><input class="input" id="al-site-teachers-image" value="${escapeHtml(site.teachersImage || "")}" placeholder="https://..."></div>
+              <div class="field"><label>Video/live rasm URL</label><input class="input" id="al-site-videos-image" value="${escapeHtml(site.videosImage || "")}" placeholder="https://..."></div>
+              <div class="field"><label>CTA rasm URL</label><input class="input" id="al-site-cta-image" value="${escapeHtml(site.ctaImage || "")}" placeholder="https://..."></div>
+            </div>
+            <div class="grid-2">
+              <div class="field"><label>About rasm fayli</label><input class="input" id="al-site-about-file" type="file" accept="image/*"></div>
+              <div class="field"><label>Kurslar rasm fayli</label><input class="input" id="al-site-courses-file" type="file" accept="image/*"></div>
+            </div>
+            <div class="grid-3">
+              <div class="field"><label>Ustozlar rasm fayli</label><input class="input" id="al-site-teachers-file" type="file" accept="image/*"></div>
+              <div class="field"><label>Video/live rasm fayli</label><input class="input" id="al-site-videos-file" type="file" accept="image/*"></div>
+              <div class="field"><label>CTA rasm fayli</label><input class="input" id="al-site-cta-file" type="file" accept="image/*"></div>
+            </div>
             <div class="grid-3">
               <div class="field"><label>Telefon</label><input class="input" id="al-site-phone" value="${escapeHtml(site.phone || "")}"></div>
               <div class="field"><label>Telegram link</label><input class="input" id="al-site-telegram" value="${escapeHtml(site.telegram || "")}" placeholder="https://t.me/..."></div>
@@ -5042,12 +5062,18 @@
         brandName: document.getElementById("al-site-brand").value,
         brandTagline: document.getElementById("al-site-tagline").value,
         logoUrl: document.getElementById("al-site-logo").value,
+        footerLogoUrl: document.getElementById("al-site-footer-logo").value,
         faviconUrl: document.getElementById("al-site-favicon").value,
         heroTitle: document.getElementById("al-site-hero-title").value,
         heroSubtitle: document.getElementById("al-site-hero-subtitle").value,
         heroPrimaryCta: document.getElementById("al-site-hero-primary").value,
         heroSecondaryCta: document.getElementById("al-site-hero-secondary").value,
         heroImage: document.getElementById("al-site-hero-image").value,
+        aboutImage: document.getElementById("al-site-about-image").value,
+        coursesImage: document.getElementById("al-site-courses-image").value,
+        teachersImage: document.getElementById("al-site-teachers-image").value,
+        videosImage: document.getElementById("al-site-videos-image").value,
+        ctaImage: document.getElementById("al-site-cta-image").value,
         phone: document.getElementById("al-site-phone").value,
         telegram: document.getElementById("al-site-telegram").value,
         email: document.getElementById("al-site-email").value,
@@ -5069,13 +5095,23 @@
       };
       try {
         const logoFile = document.getElementById("al-site-logo-file").files?.[0] || null;
+        const footerLogoFile = document.getElementById("al-site-footer-logo-file").files?.[0] || null;
         const faviconFile = document.getElementById("al-site-favicon-file").files?.[0] || null;
         const heroFile = document.getElementById("al-site-hero-file").files?.[0] || null;
+        const aboutFile = document.getElementById("al-site-about-file").files?.[0] || null;
+        const coursesFile = document.getElementById("al-site-courses-file").files?.[0] || null;
+        const teachersFile = document.getElementById("al-site-teachers-file").files?.[0] || null;
+        const videosFile = document.getElementById("al-site-videos-file").files?.[0] || null;
+        const ctaFile = document.getElementById("al-site-cta-file").files?.[0] || null;
         const galleryFiles = Array.from(document.getElementById("al-site-gallery-files").files || []);
 
         if (logoFile) {
           const uploaded = await uploadFile(logoFile, "landing", true);
           payload.logoUrl = uploaded?.url || payload.logoUrl;
+        }
+        if (footerLogoFile) {
+          const uploaded = await uploadFile(footerLogoFile, "landing", true);
+          payload.footerLogoUrl = uploaded?.url || payload.footerLogoUrl;
         }
         if (faviconFile) {
           const uploaded = await uploadFile(faviconFile, "landing", true);
@@ -5084,6 +5120,26 @@
         if (heroFile) {
           const uploaded = await uploadFile(heroFile, "landing", true);
           payload.heroImage = uploaded?.url || payload.heroImage;
+        }
+        if (aboutFile) {
+          const uploaded = await uploadFile(aboutFile, "landing", true);
+          payload.aboutImage = uploaded?.url || payload.aboutImage;
+        }
+        if (coursesFile) {
+          const uploaded = await uploadFile(coursesFile, "landing", true);
+          payload.coursesImage = uploaded?.url || payload.coursesImage;
+        }
+        if (teachersFile) {
+          const uploaded = await uploadFile(teachersFile, "landing", true);
+          payload.teachersImage = uploaded?.url || payload.teachersImage;
+        }
+        if (videosFile) {
+          const uploaded = await uploadFile(videosFile, "landing", true);
+          payload.videosImage = uploaded?.url || payload.videosImage;
+        }
+        if (ctaFile) {
+          const uploaded = await uploadFile(ctaFile, "landing", true);
+          payload.ctaImage = uploaded?.url || payload.ctaImage;
         }
         if (galleryFiles.length) {
           for (const file of galleryFiles) {
@@ -5676,10 +5732,12 @@
               <div class="field"><label>Logo URL</label><input class="input" id="ac-site-logo" value="${escapeHtml(site.logoUrl || "")}" placeholder="https://..."></div>
               <div class="field"><label>Favicon URL</label><input class="input" id="ac-site-favicon" value="${escapeHtml(site.faviconUrl || "")}" placeholder="https://..."></div>
             </div>
+            <div class="field"><label>Footer logo URL</label><input class="input" id="ac-site-footer-logo" value="${escapeHtml(site.footerLogoUrl || "")}" placeholder="https://..."></div>
             <div class="grid-2">
               <div class="field"><label>Logo fayli</label><input class="input" id="ac-site-logo-file" type="file" accept="image/*"></div>
               <div class="field"><label>Favicon fayli</label><input class="input" id="ac-site-favicon-file" type="file" accept="image/*"></div>
             </div>
+            <div class="field"><label>Footer logo fayli</label><input class="input" id="ac-site-footer-logo-file" type="file" accept="image/*"></div>
             <div class="field"><label>Hero sarlavha</label><input class="input" id="ac-site-hero-title" value="${escapeHtml(site.heroTitle || "")}"></div>
             <div class="field"><label>Hero matni</label><textarea class="textarea" id="ac-site-hero-subtitle">${escapeHtml(site.heroSubtitle || "")}</textarea></div>
             <div class="grid-2">
@@ -5688,6 +5746,24 @@
             </div>
             <div class="field"><label>Hero rasm URL</label><input class="input" id="ac-site-hero-image" value="${escapeHtml(site.heroImage || "")}" placeholder="https://..."></div>
             <div class="field"><label>Hero rasm fayli</label><input class="input" id="ac-site-hero-file" type="file" accept="image/*"></div>
+            <div class="grid-2">
+              <div class="field"><label>About rasm URL</label><input class="input" id="ac-site-about-image" value="${escapeHtml(site.aboutImage || "")}" placeholder="https://..."></div>
+              <div class="field"><label>Kurslar rasm URL</label><input class="input" id="ac-site-courses-image" value="${escapeHtml(site.coursesImage || "")}" placeholder="https://..."></div>
+            </div>
+            <div class="grid-3">
+              <div class="field"><label>Ustozlar rasm URL</label><input class="input" id="ac-site-teachers-image" value="${escapeHtml(site.teachersImage || "")}" placeholder="https://..."></div>
+              <div class="field"><label>Video/live rasm URL</label><input class="input" id="ac-site-videos-image" value="${escapeHtml(site.videosImage || "")}" placeholder="https://..."></div>
+              <div class="field"><label>CTA rasm URL</label><input class="input" id="ac-site-cta-image" value="${escapeHtml(site.ctaImage || "")}" placeholder="https://..."></div>
+            </div>
+            <div class="grid-2">
+              <div class="field"><label>About rasm fayli</label><input class="input" id="ac-site-about-file" type="file" accept="image/*"></div>
+              <div class="field"><label>Kurslar rasm fayli</label><input class="input" id="ac-site-courses-file" type="file" accept="image/*"></div>
+            </div>
+            <div class="grid-3">
+              <div class="field"><label>Ustozlar rasm fayli</label><input class="input" id="ac-site-teachers-file" type="file" accept="image/*"></div>
+              <div class="field"><label>Video/live rasm fayli</label><input class="input" id="ac-site-videos-file" type="file" accept="image/*"></div>
+              <div class="field"><label>CTA rasm fayli</label><input class="input" id="ac-site-cta-file" type="file" accept="image/*"></div>
+            </div>
             <div class="grid-3">
               <div class="field"><label>Telefon</label><input class="input" id="ac-site-phone" value="${escapeHtml(site.phone || "")}"></div>
               <div class="field"><label>Telegram link</label><input class="input" id="ac-site-telegram" value="${escapeHtml(site.telegram || "")}" placeholder="https://t.me/..."></div>
@@ -5790,12 +5866,18 @@
         brandName: document.getElementById("ac-site-brand").value,
         brandTagline: document.getElementById("ac-site-tagline").value,
         logoUrl: document.getElementById("ac-site-logo").value,
+        footerLogoUrl: document.getElementById("ac-site-footer-logo").value,
         faviconUrl: document.getElementById("ac-site-favicon").value,
         heroTitle: document.getElementById("ac-site-hero-title").value,
         heroSubtitle: document.getElementById("ac-site-hero-subtitle").value,
         heroPrimaryCta: document.getElementById("ac-site-hero-primary").value,
         heroSecondaryCta: document.getElementById("ac-site-hero-secondary").value,
         heroImage: document.getElementById("ac-site-hero-image").value,
+        aboutImage: document.getElementById("ac-site-about-image").value,
+        coursesImage: document.getElementById("ac-site-courses-image").value,
+        teachersImage: document.getElementById("ac-site-teachers-image").value,
+        videosImage: document.getElementById("ac-site-videos-image").value,
+        ctaImage: document.getElementById("ac-site-cta-image").value,
         phone: document.getElementById("ac-site-phone").value,
         telegram: document.getElementById("ac-site-telegram").value,
         email: document.getElementById("ac-site-email").value,
@@ -5817,13 +5899,23 @@
       };
       try {
         const logoFile = document.getElementById("ac-site-logo-file").files?.[0] || null;
+        const footerLogoFile = document.getElementById("ac-site-footer-logo-file").files?.[0] || null;
         const faviconFile = document.getElementById("ac-site-favicon-file").files?.[0] || null;
         const heroFile = document.getElementById("ac-site-hero-file").files?.[0] || null;
+        const aboutFile = document.getElementById("ac-site-about-file").files?.[0] || null;
+        const coursesFile = document.getElementById("ac-site-courses-file").files?.[0] || null;
+        const teachersFile = document.getElementById("ac-site-teachers-file").files?.[0] || null;
+        const videosFile = document.getElementById("ac-site-videos-file").files?.[0] || null;
+        const ctaFile = document.getElementById("ac-site-cta-file").files?.[0] || null;
         const galleryFiles = Array.from(document.getElementById("ac-site-gallery-files").files || []);
 
         if (logoFile) {
           const uploaded = await uploadFile(logoFile, "landing", true);
           payload.logoUrl = uploaded?.url || payload.logoUrl;
+        }
+        if (footerLogoFile) {
+          const uploaded = await uploadFile(footerLogoFile, "landing", true);
+          payload.footerLogoUrl = uploaded?.url || payload.footerLogoUrl;
         }
         if (faviconFile) {
           const uploaded = await uploadFile(faviconFile, "landing", true);
@@ -5832,6 +5924,26 @@
         if (heroFile) {
           const uploaded = await uploadFile(heroFile, "landing", true);
           payload.heroImage = uploaded?.url || payload.heroImage;
+        }
+        if (aboutFile) {
+          const uploaded = await uploadFile(aboutFile, "landing", true);
+          payload.aboutImage = uploaded?.url || payload.aboutImage;
+        }
+        if (coursesFile) {
+          const uploaded = await uploadFile(coursesFile, "landing", true);
+          payload.coursesImage = uploaded?.url || payload.coursesImage;
+        }
+        if (teachersFile) {
+          const uploaded = await uploadFile(teachersFile, "landing", true);
+          payload.teachersImage = uploaded?.url || payload.teachersImage;
+        }
+        if (videosFile) {
+          const uploaded = await uploadFile(videosFile, "landing", true);
+          payload.videosImage = uploaded?.url || payload.videosImage;
+        }
+        if (ctaFile) {
+          const uploaded = await uploadFile(ctaFile, "landing", true);
+          payload.ctaImage = uploaded?.url || payload.ctaImage;
         }
         if (galleryFiles.length) {
           for (const file of galleryFiles) {

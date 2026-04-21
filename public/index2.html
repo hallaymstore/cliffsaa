@@ -1,0 +1,1507 @@
+<!doctype html>
+<html lang="uz">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0d1117">
+    <title>Cliffs | Premium o'quv markazi</title>
+    <style>
+      :root {
+        --ink: #121212;
+        --muted: #68625d;
+        --line: rgba(18, 18, 18, 0.12);
+        --paper: #ffffff;
+        --soft: #fff6ed;
+        --gold: #f58220;
+        --gold-deep: #b95600;
+        --orange-soft: #fff0df;
+        --blue: #2457d6;
+        --rose: #e3576d;
+        --night: #111111;
+        --night-soft: #1d1d1d;
+        --shadow: 0 22px 58px rgba(18, 18, 18, 0.12);
+        --radius: 8px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--ink);
+        background: #fff;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      img {
+        display: block;
+        max-width: 100%;
+      }
+
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      .site {
+        min-height: 100vh;
+        overflow: hidden;
+        background: #fff;
+      }
+
+      .nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 40;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px clamp(16px, 4vw, 64px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 0;
+        background: rgba(17, 17, 17, 0.94);
+        color: #fff;
+        box-shadow: 0 12px 34px rgba(0, 0, 0, 0.18);
+        backdrop-filter: blur(18px);
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        font-weight: 900;
+      }
+
+      .brand-mark {
+        width: 44px;
+        height: 44px;
+        border-radius: var(--radius);
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        border: 2px solid var(--gold);
+        background: var(--gold);
+        color: #111;
+        font-weight: 900;
+        font-size: 1.08rem;
+      }
+
+      .brand-mark img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .brand-title {
+        display: grid;
+        line-height: 1.1;
+      }
+
+      .brand-title strong {
+        font-size: 1.05rem;
+      }
+
+      .brand-title span {
+        color: rgba(255, 255, 255, 0.68);
+        font-size: 0.75rem;
+      }
+
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .nav-links a {
+        padding: 9px 10px;
+        border-radius: var(--radius);
+        color: rgba(255, 255, 255, 0.74);
+        font-size: 0.84rem;
+        font-weight: 700;
+      }
+
+      .nav-links a:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.11);
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border: 0;
+        border-radius: var(--radius);
+        padding: 10px 15px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn-primary {
+        color: #111;
+        background: var(--gold);
+        box-shadow: 0 14px 28px rgba(245, 130, 32, 0.24);
+      }
+
+      .btn-dark {
+        color: #fff;
+        background: var(--night);
+      }
+
+      .btn-ghost {
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .hero {
+        position: relative;
+        min-height: 96vh;
+        display: grid;
+        align-items: end;
+        color: #fff;
+        background: var(--night);
+      }
+
+      .hero-slides {
+        position: absolute;
+        inset: 0;
+      }
+
+      .hero-slide {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        transform: scale(1.04);
+        transition: opacity 1.1s ease, transform 7s ease;
+      }
+
+      .hero-slide.is-active {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      .hero-slide img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.78;
+      }
+
+      .hero::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.62);
+      }
+
+      .hero-inner {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        margin: 0;
+        padding: 132px clamp(16px, 4vw, 64px) 46px;
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.42fr);
+        align-items: end;
+        gap: 38px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 18px;
+        padding: 8px 11px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: var(--radius);
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 0.78rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 860px;
+        font-size: clamp(2.8rem, 7.2vw, 6.3rem);
+        line-height: 0.94;
+        letter-spacing: 0;
+      }
+
+      .lead {
+        max-width: 700px;
+        margin: 20px 0 0;
+        color: rgba(255, 255, 255, 0.78);
+        font-size: clamp(1rem, 2vw, 1.22rem);
+        line-height: 1.65;
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 30px;
+      }
+
+      .hero-panel {
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: var(--radius);
+        background: rgba(17, 17, 17, 0.74);
+        backdrop-filter: blur(20px);
+        overflow: hidden;
+      }
+
+      .hero-panel-top {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+      }
+
+      .metric {
+        padding: 18px 16px;
+        border-right: 1px solid rgba(255, 255, 255, 0.14);
+      }
+
+      .metric:last-child {
+        border-right: 0;
+      }
+
+      .metric strong {
+        display: block;
+        font-size: 1.55rem;
+      }
+
+      .metric span {
+        display: block;
+        margin-top: 4px;
+        color: rgba(255, 255, 255, 0.68);
+        font-size: 0.78rem;
+      }
+
+      .hero-panel-body {
+        padding: 18px;
+      }
+
+      .slide-dots {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+      }
+
+      .slide-dots button {
+        width: 34px;
+        height: 4px;
+        border: 0;
+        border-radius: 99px;
+        background: rgba(255, 255, 255, 0.26);
+        cursor: pointer;
+      }
+
+      .slide-dots button.is-active {
+        background: var(--gold);
+      }
+
+      .ticker {
+        position: relative;
+        z-index: 3;
+        overflow: hidden;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        background: #111;
+      }
+
+      .ticker-track {
+        display: flex;
+        width: max-content;
+        animation: ticker 32s linear infinite;
+      }
+
+      .ticker span {
+        padding: 17px 28px;
+        color: rgba(255, 255, 255, 0.72);
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      @keyframes ticker {
+        to {
+          transform: translateX(-50%);
+        }
+      }
+
+      .section {
+        width: 100%;
+        margin: 0;
+        padding: 82px clamp(16px, 4vw, 64px);
+        background: #fff;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 28px;
+      }
+
+      .kicker {
+        margin: 0 0 8px;
+        color: var(--gold-deep);
+        font-size: 0.78rem;
+        font-weight: 900;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+      }
+
+      h2 {
+        margin: 0;
+        max-width: 760px;
+        font-size: clamp(2rem, 4vw, 3.55rem);
+        line-height: 1.02;
+        letter-spacing: 0;
+      }
+
+      .section-copy {
+        max-width: 470px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 1rem;
+        line-height: 1.7;
+      }
+
+      .about-layout,
+      .teachers-layout,
+      .videos-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(360px, 0.42fr);
+        gap: 16px;
+        align-items: stretch;
+      }
+
+      .about-layout .value-grid,
+      .teachers-layout .teachers-grid,
+      .videos-layout .videos-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .section-media {
+        position: relative;
+        min-height: 100%;
+        border-radius: var(--radius);
+        overflow: hidden;
+        background: var(--night);
+        box-shadow: var(--shadow);
+      }
+
+      .section-media img {
+        width: 100%;
+        height: 100%;
+        min-height: 360px;
+        object-fit: cover;
+        opacity: 0.92;
+      }
+
+      .section-media-caption {
+        position: absolute;
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+        padding: 16px;
+        border-radius: var(--radius);
+        color: #fff;
+        background: rgba(17, 17, 17, 0.78);
+      }
+
+      .section-media-caption strong {
+        display: block;
+        font-size: 1.15rem;
+      }
+
+      .section-media-caption span {
+        display: block;
+        margin-top: 6px;
+        color: rgba(255, 255, 255, 0.72);
+        line-height: 1.55;
+      }
+
+      .value-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+      }
+
+      .value-card,
+      .course-card,
+      .teacher-card,
+      .video-card,
+      .contact-card,
+      .process-card,
+      .quote-card {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--paper);
+        box-shadow: 0 16px 42px rgba(18, 18, 18, 0.07);
+      }
+
+      .value-card {
+        padding: 22px;
+      }
+
+      .icon {
+        width: 42px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        border-radius: var(--radius);
+        color: #111;
+        background: var(--gold);
+        font-weight: 900;
+      }
+
+      .value-card h3,
+      .course-card h3,
+      .teacher-card h3,
+      .contact-card h3,
+      .process-card h3 {
+        margin: 18px 0 8px;
+        font-size: 1.08rem;
+      }
+
+      .value-card p,
+      .course-card p,
+      .teacher-card p,
+      .video-card p,
+      .contact-card p,
+      .process-card p,
+      .quote-card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .band {
+        background: var(--soft);
+      }
+
+      .band .section {
+        background: var(--soft);
+      }
+
+      .courses-wrap {
+        display: grid;
+        grid-template-columns: minmax(0, 1.12fr) minmax(420px, 0.88fr);
+        gap: 16px;
+        align-items: stretch;
+      }
+
+      .course-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+      }
+
+      .course-card {
+        padding: 22px;
+        min-height: 168px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .course-card::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        width: 72px;
+        height: 6px;
+        background: var(--gold);
+      }
+
+      .course-tag {
+        display: inline-flex;
+        padding: 7px 9px;
+        border-radius: var(--radius);
+        background: var(--orange-soft);
+        color: var(--gold-deep);
+        font-size: 0.76rem;
+        font-weight: 900;
+      }
+
+      .course-showcase {
+        position: relative;
+        min-height: 100%;
+        border-radius: var(--radius);
+        overflow: hidden;
+        background: var(--night);
+      }
+
+      .course-showcase img {
+        width: 100%;
+        height: 100%;
+        min-height: 362px;
+        object-fit: cover;
+        opacity: 0.82;
+      }
+
+      .showcase-copy {
+        position: absolute;
+        left: 18px;
+        right: 18px;
+        bottom: 18px;
+        padding: 18px;
+        border-radius: var(--radius);
+        color: #fff;
+        background: rgba(7, 12, 20, 0.64);
+        backdrop-filter: blur(16px);
+      }
+
+      .showcase-copy strong {
+        display: block;
+        font-size: 1.4rem;
+      }
+
+      .teachers-grid,
+      .videos-grid,
+      .quotes-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
+
+      .teacher-card {
+        overflow: hidden;
+      }
+
+      .teacher-media {
+        position: relative;
+        height: 270px;
+        background: #e8eef5;
+      }
+
+      .teacher-media img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .live-badge {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 7px 10px;
+        border-radius: var(--radius);
+        color: #fff;
+        background: var(--rose);
+        font-size: 0.76rem;
+        font-weight: 900;
+      }
+
+      .teacher-body {
+        padding: 18px;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 14px;
+      }
+
+      .chip {
+        padding: 7px 9px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        color: var(--muted);
+        background: #fff;
+        font-size: 0.76rem;
+        font-weight: 800;
+      }
+
+      .experience {
+        color: #fff;
+        background: var(--night);
+      }
+
+      .experience .section {
+        background: var(--night);
+      }
+
+      .experience .section-copy,
+      .experience .process-card p {
+        color: rgba(255, 255, 255, 0.68);
+      }
+
+      .experience h2,
+      .experience h3 {
+        color: #fff;
+      }
+
+      .process-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+      }
+
+      .process-card {
+        padding: 22px;
+        background: var(--night-soft);
+        border-color: rgba(255, 255, 255, 0.13);
+        box-shadow: none;
+      }
+
+      .process-card .num {
+        color: var(--gold);
+        font-size: 2.1rem;
+        font-weight: 900;
+      }
+
+      .gallery {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr 0.8fr;
+        grid-auto-rows: 210px;
+        gap: 14px;
+      }
+
+      .gallery figure {
+        position: relative;
+        margin: 0;
+        border-radius: var(--radius);
+        overflow: hidden;
+        background: #dde6ef;
+      }
+
+      .gallery figure:first-child {
+        grid-row: span 2;
+      }
+
+      .gallery img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .gallery figcaption {
+        position: absolute;
+        left: 12px;
+        bottom: 12px;
+        padding: 8px 10px;
+        border-radius: var(--radius);
+        color: #fff;
+        background: rgba(7, 12, 20, 0.62);
+        font-size: 0.82rem;
+        font-weight: 800;
+      }
+
+      .video-card {
+        overflow: hidden;
+      }
+
+      .video-thumb {
+        position: relative;
+        height: 190px;
+        background: #dce6ef;
+      }
+
+      .video-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .play {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+      }
+
+      .play span {
+        width: 54px;
+        height: 54px;
+        display: grid;
+        place-items: center;
+        border-radius: 999px;
+        color: #0d1117;
+        background: var(--gold);
+        font-weight: 900;
+      }
+
+      .video-body {
+        padding: 16px;
+      }
+
+      .quote-card {
+        padding: 24px;
+      }
+
+      .quote-card strong {
+        display: block;
+        margin-top: 18px;
+      }
+
+      .cta {
+        width: 100%;
+        margin: 0;
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        gap: 24px;
+        align-items: center;
+        padding: 64px clamp(16px, 4vw, 64px);
+        border-radius: 0;
+        color: #fff;
+        background: #111;
+        box-shadow: var(--shadow);
+      }
+
+      .cta h2 {
+        color: #fff;
+      }
+
+      .cta p {
+        max-width: 680px;
+        color: rgba(255, 255, 255, 0.72);
+        line-height: 1.7;
+      }
+
+      .cta-side {
+        display: grid;
+        gap: 14px;
+      }
+
+      .cta-side img {
+        width: 100%;
+        height: 210px;
+        object-fit: cover;
+        border-radius: var(--radius);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+      }
+
+      .contact-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+      }
+
+      .contact-card {
+        padding: 20px;
+      }
+
+      .footer {
+        color: rgba(255, 255, 255, 0.68);
+        background: #0b0b0b;
+      }
+
+      .footer-inner {
+        width: 100%;
+        margin: 0;
+        padding: 46px clamp(16px, 4vw, 64px);
+        display: grid;
+        grid-template-columns: minmax(260px, 1.3fr) repeat(3, minmax(160px, 0.7fr));
+        align-items: start;
+        justify-content: space-between;
+        gap: 26px;
+      }
+
+      .footer .brand {
+        align-items: flex-start;
+      }
+
+      .footer-col h4 {
+        margin: 0 0 12px;
+        color: #fff;
+        font-size: 0.92rem;
+      }
+
+      .footer-col a,
+      .footer-col span {
+        display: block;
+        margin: 8px 0;
+        color: rgba(255, 255, 255, 0.68);
+        font-size: 0.9rem;
+      }
+
+      .footer-bottom {
+        width: 100%;
+        padding: 14px clamp(16px, 4vw, 64px) 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.11);
+        color: rgba(255, 255, 255, 0.58);
+        background: #0b0b0b;
+      }
+
+      .state {
+        padding: 26px;
+        border: 1px dashed var(--line);
+        border-radius: var(--radius);
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .mobile-menu {
+        display: none;
+      }
+
+      @media (max-width: 980px) {
+        .nav-links {
+          display: none;
+        }
+
+        .mobile-menu {
+          display: inline-flex;
+        }
+
+        .hero-grid,
+        .courses-wrap,
+        .cta,
+        .about-layout,
+        .teachers-layout,
+        .videos-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .footer-inner {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .hero-panel {
+          max-width: 560px;
+        }
+
+        .value-grid,
+        .process-grid,
+        .contact-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .teachers-grid,
+        .videos-grid,
+        .quotes-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 680px) {
+        .nav {
+          top: 0;
+          padding: 10px 14px;
+        }
+
+        .actions .btn-ghost {
+          display: none;
+        }
+
+        .brand-title span {
+          display: none;
+        }
+
+        .hero {
+          min-height: 100svh;
+        }
+
+        .hero-inner {
+          padding-top: 106px;
+        }
+
+        h1 {
+          font-size: 2.55rem;
+        }
+
+        .hero-panel-top,
+        .value-grid,
+        .about-layout .value-grid,
+        .teachers-layout .teachers-grid,
+        .videos-layout .videos-grid,
+        .course-grid,
+        .teachers-grid,
+        .videos-grid,
+        .process-grid,
+        .quotes-grid,
+        .contact-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .metric {
+          border-right: 0;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+        }
+
+        .metric:last-child {
+          border-bottom: 0;
+        }
+
+        .section {
+          padding: 58px 14px;
+        }
+
+        .section-head,
+        .footer-inner {
+          display: grid;
+        }
+
+        .footer-inner {
+          grid-template-columns: 1fr;
+        }
+
+        .gallery {
+          grid-template-columns: 1fr;
+          grid-auto-rows: 220px;
+        }
+
+        .gallery figure:first-child {
+          grid-row: span 1;
+        }
+
+        .cta {
+          padding: 24px;
+          margin-bottom: 58px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="site">
+      <nav class="nav" aria-label="Asosiy navigatsiya">
+        <a class="brand" href="#top" aria-label="Cliffs bosh sahifa">
+          <span class="brand-mark" id="brandMark">C</span>
+          <span class="brand-title">
+            <strong id="brandName">Cliffs</strong>
+            <span id="brandTagline">Premium o'quv markazi</span>
+          </span>
+        </a>
+        <div class="nav-links">
+          <a href="#courses">Kurslar</a>
+          <a href="#teachers">Ustozlar</a>
+          <a href="#process">Jarayon</a>
+          <a href="#videos">Video</a>
+          <a href="#contact">Aloqa</a>
+        </div>
+        <div class="actions">
+          <a class="btn btn-ghost" href="login.html">Kirish</a>
+          <a class="btn btn-primary" href="register.html" id="navCta">Ro'yxatdan o'tish</a>
+          <a class="btn btn-ghost mobile-menu" href="#courses">Menu</a>
+        </div>
+      </nav>
+
+      <header class="hero" id="top">
+        <div class="hero-slides" id="heroSlides"></div>
+        <div class="hero-inner">
+          <div class="hero-grid">
+            <div>
+              <p class="eyebrow" id="heroEyebrow">Cliffs o'quv markazi</p>
+              <h1 id="heroTitle">Ingliz tili, rus tili va mobile dasturlash kurslari</h1>
+              <p class="lead" id="heroSubtitle">Yangi avlod o'quv markazi: tajribali ustozlar, real amaliyot va natijaga yo'naltirilgan darslar.</p>
+              <div class="hero-actions">
+                <a class="btn btn-primary" href="register.html" id="heroPrimary">Ro'yxatdan o'tish</a>
+                <a class="btn btn-ghost" href="#courses" id="heroSecondary">Kurslar</a>
+              </div>
+            </div>
+
+            <aside class="hero-panel" aria-label="Cliffs ko'rsatkichlari">
+              <div class="hero-panel-top">
+                <div class="metric"><strong id="metricTeachers">0</strong><span>Ustozlar</span></div>
+                <div class="metric"><strong id="metricCourses">0</strong><span>Kurslar</span></div>
+                <div class="metric"><strong id="metricVideos">0</strong><span>Video dars</span></div>
+              </div>
+              <div class="hero-panel-body">
+                <strong id="panelTitle">Bugun darsni boshlang</strong>
+                <p class="lead" style="margin-top: 8px; font-size: 0.94rem;">Daraja aniqlash, mentorlik, jonli darslar va amaliy vazifalar bitta tizimda.</p>
+                <div class="slide-dots" id="slideDots" aria-label="Hero rasmlar"></div>
+              </div>
+            </aside>
+          </div>
+        </div>
+        <div class="ticker" aria-hidden="true">
+          <div class="ticker-track" id="tickerTrack"></div>
+        </div>
+      </header>
+
+      <main>
+        <section class="section" id="about">
+          <div class="section-head">
+            <div>
+              <p class="kicker">Nima uchun Cliffs</p>
+              <h2>Natijaga ishlaydigan, zamonaviy va shaxsiylashtirilgan ta'lim muhiti.</h2>
+            </div>
+            <p class="section-copy">Bu sahifa backend bilan bog'langan: admin paneldagi landing ma'lumotlari, kurslar, gallery, ustozlar, live va video darslar avtomatik chiqadi.</p>
+          </div>
+          <div class="about-layout">
+            <div class="value-grid">
+              <article class="value-card"><div class="icon">01</div><h3>Real diagnostika</h3><p>O'quvchi darajasi, maqsadi va vaqtiga mos yo'l xaritasi tuziladi.</p></article>
+              <article class="value-card"><div class="icon">02</div><h3>Mentor nazorati</h3><p>Progress, davomad, vazifalar va moliyaviy holat tizimda shaffof ko'rinadi.</p></article>
+              <article class="value-card"><div class="icon">03</div><h3>Jonli darslar</h3><p>Ustozlar live sessiyalar, video darslar va chat orqali doimiy aloqa qiladi.</p></article>
+              <article class="value-card"><div class="icon">04</div><h3>Premium muhit</h3><p>Kursga kirishdan to natijagacha har bir qadam tartibli va qulay.</p></article>
+            </div>
+            <aside class="section-media">
+              <img id="aboutImage" src="learnhub-1.0.0/src/assets/images/hero-img.jpg" alt="Cliffs haqida">
+              <div class="section-media-caption"><strong>Admin rasm bloki</strong><span>Bu joydagi rasm admin paneldagi About rasmidan olinadi.</span></div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="band" id="courses">
+          <div class="section">
+            <div class="section-head">
+              <div>
+                <p class="kicker">Kurslar</p>
+                <h2>Eng talabgir yo'nalishlar uchun kuchli dasturlar.</h2>
+              </div>
+              <p class="section-copy">Kurslar admin paneldagi landing contentdan olinadi, guruhlar esa platformada alohida boshqariladi.</p>
+            </div>
+            <div class="courses-wrap">
+              <div class="course-grid" id="courseGrid"></div>
+              <aside class="course-showcase">
+                <img id="courseImage" src="learnhub-1.0.0/src/assets/images/course-img-1.jpg" alt="Cliffs kurs muhiti">
+                <div class="showcase-copy">
+                  <strong>Intensiv, amaliy, nazoratli</strong>
+                  <p>Har bir guruhda materiallar, jadval, vazifa, chat va video kontent bir joyda yuradi.</p>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="teachers">
+          <div class="section-head">
+            <div>
+              <p class="kicker">Ustozlar</p>
+              <h2>O'quvchini yo'qotib qo'ymaydigan mentorlar.</h2>
+            </div>
+            <p class="section-copy">Tasdiqlangan teacher profillari va ularning kurslari backenddan keladi.</p>
+          </div>
+          <div class="teachers-layout">
+            <aside class="section-media">
+              <img id="teachersImage" src="learnhub-1.0.0/src/assets/images/course-img-3.jpg" alt="Cliffs ustozlari">
+              <div class="section-media-caption"><strong>Ustozlar jamoasi</strong><span>Teacher profillari va obunachilar backenddan avtomatik chiqadi.</span></div>
+            </aside>
+            <div class="teachers-grid" id="teachersGrid"></div>
+          </div>
+        </section>
+
+        <section class="experience" id="process">
+          <div class="section">
+            <div class="section-head">
+              <div>
+                <p class="kicker">Jarayon</p>
+                <h2>O'quvchi uchun aniq, admin uchun boshqariladigan tizim.</h2>
+              </div>
+              <p class="section-copy">Ro'yxatdan o'tish, guruhga qo'shilish, to'lov, dars, material va attendance oqimi bitta platformaga ulangan.</p>
+            </div>
+            <div class="process-grid">
+              <article class="process-card"><div class="num">1</div><h3>Ariza</h3><p>O'quvchi ro'yxatdan o'tadi va mos guruhga so'rov yuboradi.</p></article>
+              <article class="process-card"><div class="num">2</div><h3>Tasdiqlash</h3><p>Admin o'quvchini guruhga qabul qiladi va to'lov nazoratini ko'radi.</p></article>
+              <article class="process-card"><div class="num">3</div><h3>Darslar</h3><p>Chat, video, material, jadval va e'lonlar guruh ichida ishlaydi.</p></article>
+              <article class="process-card"><div class="num">4</div><h3>Natija</h3><p>Davomad, topshiriqlar va feedback orqali progress ushlab turiladi.</p></article>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="gallerySection">
+          <div class="section-head">
+            <div>
+              <p class="kicker">Atmosfera</p>
+              <h2>Cliffs muhiti rasmlarda.</h2>
+            </div>
+            <p class="section-copy">Admin paneldan bir nechta gallery rasmi yuklansa, ular hero slider va gallery bloklarda avtomatik ishlaydi.</p>
+          </div>
+          <div class="gallery" id="galleryGrid"></div>
+        </section>
+
+        <section class="band" id="videos">
+          <div class="section">
+            <div class="section-head">
+              <div>
+                <p class="kicker">Video va live</p>
+                <h2>Darslar faqat sinfda tugab qolmaydi.</h2>
+              </div>
+              <p class="section-copy">So'nggi video darslar va aktiv live sessiyalar backenddan ko'rsatiladi.</p>
+            </div>
+            <div class="videos-layout">
+              <div class="videos-grid" id="videosGrid"></div>
+              <aside class="section-media">
+                <img id="videosImage" src="learnhub-1.0.0/src/assets/images/course-img-4.jpg" alt="Cliffs video va live darslar">
+                <div class="section-media-caption"><strong>Live va video</strong><span>Aktiv live sessiyalar va video darslar platforma backendidan olinadi.</span></div>
+              </aside>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <div>
+              <p class="kicker">Fikrlar</p>
+              <h2>Premium ko'rinishning ichida oddiy maqsad bor: o'quvchi natijasi.</h2>
+            </div>
+          </div>
+          <div class="quotes-grid">
+            <article class="quote-card"><p>"Platformada jadval, material va chat bir joyda bo'lgani uchun darsdan keyingi nazorat ancha osonlashdi."</p><strong>Mentor feedback</strong></article>
+            <article class="quote-card"><p>"Guruhga qo'shilish va to'lov jarayoni tushunarli. O'quvchi ham, ota-ona ham adashmaydi."</p><strong>Admin feedback</strong></article>
+            <article class="quote-card"><p>"Video darslar va live orqali mavzuni qayta ko'rish mumkin. Bu natijani tezlashtiradi."</p><strong>O'quvchi feedback</strong></article>
+          </div>
+        </section>
+
+        <section class="cta">
+          <div>
+            <p class="kicker">Boshlash vaqti</p>
+            <h2 id="ctaTitle">Cliffs bilan bugun ro'yxatdan o'ting.</h2>
+            <p id="ctaText">Maqsadingizni yozing, mos kursni tanlang va o'quv jarayonini platforma orqali tartibli boshlang.</p>
+          </div>
+          <div class="cta-side">
+            <img id="ctaImage" src="learnhub-1.0.0/src/assets/images/course-img-2.jpg" alt="Cliffs ro'yxatdan o'tish">
+            <a class="btn btn-primary" href="register.html">Ariza qoldirish</a>
+          </div>
+        </section>
+
+        <section class="section" id="contact">
+          <div class="section-head">
+            <div>
+              <p class="kicker">Aloqa</p>
+              <h2>Markaz bilan bog'lanish.</h2>
+            </div>
+          </div>
+          <div class="contact-grid" id="contactGrid"></div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <div class="footer-inner">
+          <div class="brand">
+            <span class="brand-mark" id="footerMark">C</span>
+            <span class="brand-title">
+              <strong id="footerTitle">Cliffs</strong>
+              <span id="footerDesc">Sifatli ta'lim va zamonaviy o'quv jarayoni.</span>
+            </span>
+          </div>
+          <div class="footer-col">
+            <h4>Sahifalar</h4>
+            <a href="#courses">Kurslar</a>
+            <a href="#teachers">Ustozlar</a>
+            <a href="#videos">Video darslar</a>
+            <a href="#contact">Aloqa</a>
+          </div>
+          <div class="footer-col">
+            <h4>Platforma</h4>
+            <a href="login.html">Kirish</a>
+            <a href="register.html">Ro'yxatdan o'tish</a>
+            <a href="videos.html">Video kutubxona</a>
+            <a href="/admin">Admin panel</a>
+          </div>
+          <div class="footer-col">
+            <h4>Aloqa</h4>
+            <span id="footerPhone">Telefon admin paneldan olinadi</span>
+            <span id="footerTelegram">Telegram admin paneldan olinadi</span>
+            <span id="footerAddress">Manzil admin paneldan olinadi</span>
+          </div>
+        </div>
+        <div class="footer-bottom" id="footerCopyright">&copy; 2026 Cliffs. Barcha huquqlar himoyalangan.</div>
+      </footer>
+    </div>
+
+    <script>
+      const fallbackImages = [
+        "learnhub-1.0.0/src/assets/images/hero-img.jpg",
+        "learnhub-1.0.0/src/assets/images/course-img-1.jpg",
+        "learnhub-1.0.0/src/assets/images/course-img-2.jpg",
+        "learnhub-1.0.0/src/assets/images/course-img-3.jpg",
+        "learnhub-1.0.0/src/assets/images/course-img-4.jpg"
+      ];
+
+      const teacherFallbacks = [
+        "learnhub-1.0.0/src/assets/images/avatar/avatar-1.jpg",
+        "learnhub-1.0.0/src/assets/images/avatar/avatar-2.jpg",
+        "learnhub-1.0.0/src/assets/images/avatar/avatar-3.jpg",
+        "learnhub-1.0.0/src/assets/images/avatar/avatar-4.jpg",
+        "learnhub-1.0.0/src/assets/images/avatar/avatar-5.jpg",
+        "learnhub-1.0.0/src/assets/images/avatar/avatar-6.jpg"
+      ];
+
+      const defaultCourses = ["Ingliz tili", "Rus tili", "Mobile dasturlash", "Matematika", "IELTS tayyorlov", "Frontend bootcamp"];
+
+      const $ = (id) => document.getElementById(id);
+      const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[char]));
+
+      async function getJson(url, fallback) {
+        try {
+          const response = await fetch(url, { headers: { "Accept": "application/json" } });
+          if (!response.ok) throw new Error(response.statusText);
+          return await response.json();
+        } catch (error) {
+          return fallback;
+        }
+      }
+
+      function setText(id, value) {
+        const node = $(id);
+        if (node && value) node.textContent = value;
+      }
+
+      function setFooterContacts(site) {
+        setText("footerPhone", site.phone || "Telefon admin paneldan olinadi");
+        setText("footerTelegram", site.telegram || "Telegram admin paneldan olinadi");
+        setText("footerAddress", site.address || "Manzil admin paneldan olinadi");
+        setText("footerCopyright", site.footerCopyright || "(c) 2026 Cliffs. Barcha huquqlar himoyalangan.");
+      }
+
+      function brandLogo(site) {
+        const initial = escapeHtml((site.brandName || "Cliffs").slice(0, 1).toUpperCase());
+        const headerLogo = site.logoUrl ? `<img src="${escapeHtml(site.logoUrl)}" alt="${escapeHtml(site.brandName || "Cliffs")} logo">` : initial;
+        const footerLogo = site.footerLogoUrl || site.logoUrl;
+        $("brandMark").innerHTML = headerLogo;
+        $("footerMark").innerHTML = footerLogo ? `<img src="${escapeHtml(footerLogo)}" alt="${escapeHtml(site.brandName || "Cliffs")} footer logo">` : initial;
+      }
+
+      function uniqueImages(site) {
+        const images = [
+          site.heroImage,
+          site.aboutImage,
+          site.coursesImage,
+          site.teachersImage,
+          site.videosImage,
+          site.ctaImage,
+          ...(Array.isArray(site.gallery) ? site.gallery : []),
+          ...fallbackImages
+        ]
+          .filter(Boolean)
+          .filter((item, index, arr) => arr.indexOf(item) === index);
+        return images.slice(0, 8);
+      }
+
+      function imageFrom(site, key, images, fallbackIndex) {
+        return site[key] || images[fallbackIndex] || fallbackImages[fallbackIndex] || fallbackImages[0];
+      }
+
+      function renderSlider(images) {
+        $("heroSlides").innerHTML = images.map((src, index) => `
+          <div class="hero-slide ${index === 0 ? "is-active" : ""}">
+            <img src="${escapeHtml(src)}" alt="Cliffs ta'lim muhiti ${index + 1}">
+          </div>
+        `).join("");
+        $("slideDots").innerHTML = images.map((_, index) => `<button class="${index === 0 ? "is-active" : ""}" data-slide="${index}" aria-label="${index + 1}-rasm"></button>`).join("");
+
+        let active = 0;
+        const slides = [...document.querySelectorAll(".hero-slide")];
+        const dots = [...document.querySelectorAll("[data-slide]")];
+        const go = (next) => {
+          active = next;
+          slides.forEach((slide, index) => slide.classList.toggle("is-active", index === active));
+          dots.forEach((dot, index) => dot.classList.toggle("is-active", index === active));
+        };
+        dots.forEach((dot) => dot.addEventListener("click", () => go(Number(dot.dataset.slide))));
+        if (slides.length > 1) setInterval(() => go((active + 1) % slides.length), 5200);
+      }
+
+      function renderTicker(courses) {
+        const items = [...courses, "Live darslar", "Video lessons", "Mentor nazorati", "Attendance", "Guruh chatlari"];
+        const doubled = [...items, ...items];
+        $("tickerTrack").innerHTML = doubled.map((item) => `<span>${escapeHtml(item)}</span>`).join("");
+      }
+
+      function renderCourses(courses, backendCourses = []) {
+        const list = backendCourses.length
+          ? backendCourses.slice(0, 6).map((course) => ({
+              title: course.subject || course.name || "Kurs",
+              text: `${course.memberCount || 0} o'quvchi - ${course.coursePrice ? `${Number(course.coursePrice).toLocaleString("uz-UZ")} so'm` : "Narx admin panelda"}`,
+              href: course.id ? `group.html?id=${encodeURIComponent(course.id)}` : "groups.html"
+            }))
+          : courses.slice(0, 6).map((course) => ({
+              title: course,
+              text: "Daraja, jadval, material va amaliy vazifalar bilan to'liq yo'l xaritasi.",
+              href: "groups.html"
+            }));
+        $("courseGrid").innerHTML = list.map((course, index) => `
+          <a class="course-card" href="${escapeHtml(course.href)}">
+            <span class="course-tag">0${index + 1} / Cliffs</span>
+            <h3>${escapeHtml(course.title)}</h3>
+            <p>${escapeHtml(course.text)}</p>
+          </a>
+        `).join("");
+      }
+
+      function renderTeachers(teachers) {
+        const list = teachers.length ? teachers.slice(0, 6) : [
+          { fullName: "Cliffs mentor", bio: "Tajribali ustozlar bazasi backenddan avtomatik chiqadi.", courses: ["Ingliz tili", "IELTS"], followerCount: 0 },
+          { fullName: "Programming mentor", bio: "Dasturlash yo'nalishlari uchun amaliy mentorlik.", courses: ["Mobile", "Frontend"], followerCount: 0 },
+          { fullName: "Language coach", bio: "Speaking, grammar va result tracking bilan ishlaydi.", courses: ["Rus tili", "General English"], followerCount: 0 }
+        ];
+        $("teachersGrid").innerHTML = list.map((teacher, index) => {
+          const image = teacher.avatar || teacherFallbacks[index % teacherFallbacks.length];
+          const courses = Array.isArray(teacher.courses) && teacher.courses.length ? teacher.courses : ["Mentorlik", "Guruh darsi"];
+          return `
+            <a class="teacher-card" href="${teacher.id ? `profile.html?id=${encodeURIComponent(teacher.id)}` : "profile.html"}">
+              <div class="teacher-media">
+                <img src="${escapeHtml(image)}" alt="${escapeHtml(teacher.fullName || "Ustoz")}">
+                ${teacher.isLive ? `<span class="live-badge">LIVE</span>` : ""}
+              </div>
+              <div class="teacher-body">
+                <h3>${escapeHtml(teacher.fullName || "Ustoz")}</h3>
+                <p>${escapeHtml(teacher.bio || "Cliffs o'quvchilariga natijaga yo'naltirilgan dars beradi.")}</p>
+                <div class="chips">
+                  ${courses.slice(0, 3).map((course) => `<span class="chip">${escapeHtml(course)}</span>`).join("")}
+                  <span class="chip">${escapeHtml(teacher.followerCount || 0)} obunachi</span>
+                </div>
+              </div>
+            </a>
+          `;
+        }).join("");
+      }
+
+      function renderGallery(images) {
+        $("galleryGrid").innerHTML = images.slice(0, 5).map((src, index) => `
+          <figure>
+            <img src="${escapeHtml(src)}" alt="Cliffs gallery ${index + 1}">
+            <figcaption>${index === 0 ? "Premium ta'lim muhiti" : "Cliffs campus"}</figcaption>
+          </figure>
+        `).join("");
+      }
+
+      function renderVideos(videos, lives) {
+        const liveCards = lives.slice(0, 2).map((session) => ({
+          title: session.title || "Jonli dars",
+          meta: session.teacher?.fullName || "Cliffs ustoz",
+          image: session.teacher?.avatar || fallbackImages[2],
+          href: session.id ? `video.html?live=${encodeURIComponent(session.id)}` : "videos.html",
+          live: true
+        }));
+        const videoCards = videos.slice(0, 4).map((video) => ({
+          title: video.title || "Video dars",
+          meta: `${video.teacher?.fullName || "Cliffs"} - ${video.likesCount || 0} like`,
+          image: video.youtubeThumbnail || fallbackImages[3],
+          href: video.id ? `video.html?id=${encodeURIComponent(video.id)}` : "videos.html",
+          live: false
+        }));
+        const cards = [...liveCards, ...videoCards].slice(0, 6);
+        const fallback = [
+          { title: "Video darslar kutubxonasi", meta: "Backendga video qo'shilsa shu yerda chiqadi", image: fallbackImages[3], href: "videos.html" },
+          { title: "Live sessiyalar", meta: "Aktiv live darslar avtomatik belgilanadi", image: fallbackImages[4], href: "videos.html" },
+          { title: "Ustoz profillari", meta: "Teacher content bilan bog'langan", image: fallbackImages[1], href: "videos.html" }
+        ];
+        $("videosGrid").innerHTML = (cards.length ? cards : fallback).map((item) => `
+          <a class="video-card" href="${escapeHtml(item.href)}">
+            <div class="video-thumb">
+              <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}">
+              <span class="play"><span>${item.live ? "LIVE" : "Play"}</span></span>
+            </div>
+            <div class="video-body">
+              <h3>${escapeHtml(item.title)}</h3>
+              <p>${escapeHtml(item.meta)}</p>
+            </div>
+          </a>
+        `).join("");
+      }
+
+      function renderContact(site) {
+        const contacts = [
+          ["Telefon", site.phone || "Admin panelda telefon kiriting"],
+          ["Telegram", site.telegram || "Admin panelda telegram kiriting"],
+          ["Manzil", site.address || "Admin panelda manzil kiriting"],
+          ["Ish vaqti", site.workingHours || "Dushanba - Shanba, 09:00 - 20:00"]
+        ];
+        $("contactGrid").innerHTML = contacts.map(([title, value]) => `
+          <article class="contact-card">
+            <div class="icon">${escapeHtml(title.slice(0, 1))}</div>
+            <h3>${escapeHtml(title)}</h3>
+            <p>${escapeHtml(value)}</p>
+          </article>
+        `).join("");
+      }
+
+      async function init() {
+        const [landing, teachersData, videosData, liveData] = await Promise.all([
+          getJson("/api/public/landing", { site: {}, highlights: {} }),
+          getJson("/api/public/teachers", { teachers: [] }),
+          getJson("/api/public/videos?sort=trending&limit=6", { videos: [] }),
+          getJson("/api/public/live/active", { sessions: [] })
+        ]);
+
+        const site = landing.site || {};
+        const highlights = landing.highlights || {};
+        const teachers = highlights.topTeachers || teachersData.teachers || [];
+        const videos = highlights.featuredVideos || videosData.videos || [];
+        const lives = highlights.activeLives || liveData.sessions || [];
+        const backendCourses = highlights.topCourses || [];
+        const courses = Array.isArray(site.courses) && site.courses.length ? site.courses : defaultCourses;
+        const images = uniqueImages(site);
+
+        document.title = `${site.brandName || "Cliffs"} | Premium o'quv markazi`;
+        if (site.faviconUrl) {
+          const link = document.createElement("link");
+          link.rel = "icon";
+          link.href = site.faviconUrl;
+          document.head.appendChild(link);
+        }
+
+        brandLogo(site);
+        setText("brandName", site.brandName || "Cliffs");
+        setText("brandTagline", site.brandTagline || "Premium o'quv markazi");
+        setText("heroEyebrow", site.brandTagline || "Cliffs o'quv markazi");
+        setText("heroTitle", site.heroTitle);
+        setText("heroSubtitle", site.heroSubtitle);
+        setText("heroPrimary", site.heroPrimaryCta);
+        setText("navCta", site.heroPrimaryCta);
+        setText("heroSecondary", site.heroSecondaryCta);
+        setText("footerTitle", site.footerTitle || site.brandName || "Cliffs");
+        setText("footerDesc", site.footerDescription);
+        setFooterContacts(site);
+        setText("ctaTitle", `${site.brandName || "Cliffs"} bilan keyingi bosqichni boshlang.`);
+        setText("ctaText", site.footerDescription || "Maqsadingizni yozing, mos kursni tanlang va o'quv jarayonini platforma orqali tartibli boshlang.");
+
+        $("metricTeachers").textContent = highlights.totals?.teachers || teachers.length || 0;
+        $("metricCourses").textContent = highlights.totals?.groups || backendCourses.length || courses.length || 0;
+        $("metricVideos").textContent = highlights.totals?.videos || videos.length || 0;
+        $("aboutImage").src = imageFrom(site, "aboutImage", images, 1);
+        $("courseImage").src = imageFrom(site, "coursesImage", images, 2);
+        $("teachersImage").src = imageFrom(site, "teachersImage", images, 3);
+        $("videosImage").src = imageFrom(site, "videosImage", images, 4);
+        $("ctaImage").src = imageFrom(site, "ctaImage", images, 0);
+
+        renderSlider(images);
+        renderTicker(courses);
+        renderCourses(courses, backendCourses);
+        renderTeachers(teachers);
+        renderGallery(images);
+        renderVideos(videos, lives);
+        renderContact(site);
+      }
+
+      init();
+    </script>
+  </body>
+</html>

@@ -34,6 +34,7 @@ const STATIC_FILES = new Map([
   ['group.html', 'text/html; charset=utf-8'],
   ['groups.html', 'text/html; charset=utf-8'],
   ['index.html', 'text/html; charset=utf-8'],
+  ['index2.html', 'text/html; charset=utf-8'],
   ['login.html', 'text/html; charset=utf-8'],
   ['material.html', 'text/html; charset=utf-8'],
   ['materials.html', 'text/html; charset=utf-8'],
@@ -1123,7 +1124,13 @@ function defaultSiteContent() {
     heroTitle: 'Ingliz tili, rus tili va mobile dasturlash kurslari',
     heroSubtitle: "Yangi avlod o'quv markazi: tajribali ustozlar, real amaliyot va natijaga yo'naltirilgan darslar.",
     heroImage: '',
+    aboutImage: '',
+    coursesImage: '',
+    teachersImage: '',
+    videosImage: '',
+    ctaImage: '',
     logoUrl: '',
+    footerLogoUrl: '',
     faviconUrl: '',
     address: '',
     phone: '',
@@ -1134,7 +1141,7 @@ function defaultSiteContent() {
     heroSecondaryCta: 'Kurslar',
     footerTitle: "Cliffs o'quv markazi",
     footerDescription: "Sifatli ta'lim va zamonaviy o'quv jarayoni.",
-    footerCopyright: '© 2026 Cliffs. Barcha huquqlar himoyalangan.',
+    footerCopyright: '(c) 2026 Cliffs. Barcha huquqlar himoyalangan.',
     courses: ['Ingliz tili', 'Rus tili', 'Mobile dasturlash', 'Matematika', 'IELTS tayyorlov'],
     gallery: [],
   };
@@ -1167,7 +1174,13 @@ function normalizeSiteContent(input = {}, base = defaultSiteContent()) {
     heroTitle: clean(merged.heroTitle, 160) || base.heroTitle,
     heroSubtitle: clean(merged.heroSubtitle, 600) || base.heroSubtitle,
     heroImage: clean(merged.heroImage, 500),
+    aboutImage: clean(merged.aboutImage, 500),
+    coursesImage: clean(merged.coursesImage, 500),
+    teachersImage: clean(merged.teachersImage, 500),
+    videosImage: clean(merged.videosImage, 500),
+    ctaImage: clean(merged.ctaImage, 500),
     logoUrl: clean(merged.logoUrl, 500),
+    footerLogoUrl: clean(merged.footerLogoUrl, 500),
     faviconUrl: clean(merged.faviconUrl, 500),
     address: clean(merged.address, 240),
     phone: clean(merged.phone, 80),
@@ -3953,7 +3966,10 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://' + (req.headers.host || 'localhost'));
     const learnhubIndex = path.join(PUBLIC, 'learnhub-1.0.0', 'dist', 'index.html');
     if (req.method === 'GET' && url.pathname === '/') {
-      return redir(res, '/index.html');
+      return text(res, 200, fs.readFileSync(path.join(PUBLIC, 'index2.html'), 'utf8'), 'text/html; charset=utf-8');
+    }
+    if (req.method === 'GET' && url.pathname === '/index.html') {
+      return text(res, 200, fs.readFileSync(path.join(PUBLIC, 'index2.html'), 'utf8'), 'text/html; charset=utf-8');
     }
     if (req.method === 'GET' && url.pathname === '/learnhub') {
       if (!fs.existsSync(learnhubIndex)) return json(res, 404, { error: 'LearnHub build topilmadi' });
