@@ -1,0 +1,2850 @@
+<!DOCTYPE html>
+<html lang="uz" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cliffs — Premium Ta'lim Markazi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --orange-50: #FFF7ED;
+            --orange-100: #FFEDD5;
+            --orange-200: #FED7AA;
+            --orange-300: #FDBA74;
+            --orange-400: #FB923C;
+            --orange-500: #F97316;
+            --orange-600: #EA580C;
+            --orange-700: #C2410C;
+            --orange-800: #9A3412;
+            --orange-900: #7C2D12;
+            --gradient-orange: linear-gradient(135deg, #F97316 0%, #EA580C 50%, #C2410C 100%);
+            
+            --light-bg: #FFFFFF;
+            --light-surface: #F8FAFC;
+            --light-text: #0F172A;
+            --light-text-secondary: #64748B;
+            --light-border: #E2E8F0;
+            
+            --dark-bg: #0F172A;
+            --dark-surface: #1E293B;
+            --dark-text: #F1F5F9;
+            --dark-text-secondary: #94A3B8;
+            --dark-border: #334155;
+            
+            --bg: var(--light-bg);
+            --surface: var(--light-surface);
+            --text: var(--light-text);
+            --text-secondary: var(--light-text-secondary);
+            --border: var(--light-border);
+            
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --shadow-orange: 0 20px 60px rgba(249, 115, 22, 0.3);
+        }
+
+        [data-theme="dark"] {
+            --bg: var(--dark-bg);
+            --surface: var(--dark-surface);
+            --text: var(--dark-text);
+            --text-secondary: var(--dark-text-secondary);
+            --border: var(--dark-border);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+
+        /* PRELOADER */
+        .preloader {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+
+        .preloader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .preloader-inner {
+            text-align: center;
+        }
+
+        .preloader-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            font-weight: 900;
+            background: var(--gradient-orange);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .preloader-bar {
+            width: 200px;
+            height: 3px;
+            background: var(--border);
+            border-radius: 10px;
+            margin: 20px auto 0;
+            overflow: hidden;
+        }
+
+        .preloader-bar::after {
+            content: '';
+            display: block;
+            width: 40%;
+            height: 100%;
+            background: var(--gradient-orange);
+            border-radius: 10px;
+            animation: loading 1.2s ease-in-out infinite;
+        }
+
+        @keyframes loading {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(350%); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.95); }
+        }
+
+        /* HERO BACKGROUND SLIDER */
+        .hero-bg-slider {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .hero-bg-slide {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            transition: opacity 2s ease-in-out;
+            transform: scale(1);
+        }
+
+        .hero-bg-slide.active {
+            opacity: 0.15;
+            animation: zoomSlow 20s ease-in-out infinite;
+        }
+
+        .hero-bg-slide:nth-child(1) {
+            background-image: url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1920');
+        }
+
+        .hero-bg-slide:nth-child(2) {
+            background-image: url('https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=1920');
+        }
+
+        .hero-bg-slide:nth-child(3) {
+            background-image: url('https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=1920');
+        }
+
+        @keyframes zoomSlow {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* NAVBAR */
+        .navbar {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%;
+            z-index: 9999;
+            padding: 20px 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: transparent;
+        }
+
+        .navbar.scrolled {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        [data-theme="dark"] .navbar.scrolled {
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        .navbar .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .nav-logo-icon {
+            width: 45px;
+            height: 45px;
+            background: var(--gradient-orange);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.3rem;
+            color: white;
+            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+        }
+
+        .nav-logo-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        .nav-logo-text span {
+            color: var(--orange-500);
+        }
+
+        .nav-center {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--orange-500);
+            background: rgba(249, 115, 22, 0.08);
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .theme-toggle, .lang-toggle {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .theme-toggle:hover, .lang-toggle:hover {
+            border-color: var(--orange-500);
+            color: var(--orange-500);
+            transform: translateY(-2px);
+        }
+
+        .lang-select {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.85rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-primary {
+            background: var(--gradient-orange);
+            color: white;
+            box-shadow: 0 4px 20px rgba(249, 115, 22, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(249, 115, 22, 0.5);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--orange-500);
+            border: 2px solid var(--orange-500);
+        }
+
+        .btn-outline:hover {
+            background: var(--orange-500);
+            color: white;
+        }
+
+        .nav-toggle {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            padding: 8px;
+            border: none;
+            background: none;
+        }
+
+        .nav-toggle span {
+            width: 25px;
+            height: 2px;
+            background: var(--text);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        /* HERO SECTION */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+            padding: 140px 0 80px;
+            overflow: hidden;
+        }
+
+        .hero .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(249, 115, 22, 0.1);
+            border: 1px solid rgba(249, 115, 22, 0.2);
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--orange-500);
+            margin-bottom: 24px;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .hero-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 4rem;
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            color: var(--text);
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+
+        .hero-title .highlight {
+            background: var(--gradient-orange);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 36px;
+            animation: fadeInUp 0.8s ease 0.4s both;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 48px;
+            animation: fadeInUp 0.8s ease 0.6s both;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 40px;
+            animation: fadeInUp 0.8s ease 0.8s both;
+        }
+
+        .hero-stat {
+            text-align: left;
+        }
+
+        .hero-stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--orange-500);
+            font-family: 'Playfair Display', serif;
+        }
+
+        .hero-stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero-visual {
+            position: relative;
+            animation: fadeInUp 1s ease 0.3s both;
+        }
+
+        .hero-image-wrapper {
+            position: relative;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .hero-image {
+            width: 100%;
+            height: 500px;
+            object-fit: cover;
+        }
+
+        .hero-floating-card {
+            position: absolute;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px 20px;
+            box-shadow: var(--shadow-lg);
+            animation: floatCard 4s ease-in-out infinite;
+        }
+
+        .floating-card-1 {
+            top: 20px;
+            right: -20px;
+            background: white;
+        }
+
+        .floating-card-2 {
+            bottom: 40px;
+            left: -30px;
+            animation-delay: 1s;
+            background: white;
+        }
+
+        @keyframes floatCard {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .floating-stat {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .floating-stat-icon {
+            width: 36px;
+            height: 36px;
+            background: rgba(249, 115, 22, 0.15);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--orange-500);
+        }
+
+        /* SECTIONS COMMON */
+        .section {
+            padding: 100px 0;
+            position: relative;
+        }
+
+        .section .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(249, 115, 22, 0.1);
+            border: 1px solid rgba(249, 115, 22, 0.15);
+            padding: 6px 18px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--orange-500);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+
+        .section-title .highlight {
+            background: var(--gradient-orange);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-desc {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+
+        /* ABOUT SECTION */
+        .about-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        .about-image {
+            position: relative;
+            border-radius: 24px;
+            overflow: hidden;
+        }
+
+        .about-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .about-stats {
+            position: absolute;
+            bottom: -30px;
+            right: -30px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .about-content h3 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+
+        .about-content p {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .about-features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 30px;
+        }
+
+        .about-feature {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .about-feature-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(249, 115, 22, 0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--orange-500);
+        }
+
+        /* COURSES MARQUEE */
+        .courses-marquee {
+            overflow: hidden;
+            position: relative;
+        }
+
+        .marquee-track {
+            display: flex;
+            gap: 24px;
+            animation: marquee 30s linear infinite;
+            width: max-content;
+        }
+
+        .marquee-track:hover {
+            animation-play-state: paused;
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .course-card {
+            flex-shrink: 0;
+            width: 380px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.4s ease;
+        }
+
+        .course-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--orange-500);
+        }
+
+        .course-image {
+            height: 220px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .course-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .course-card:hover .course-image img {
+            transform: scale(1.1);
+        }
+
+        .course-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            background: var(--gradient-orange);
+            color: white;
+        }
+
+        .course-body {
+            padding: 24px;
+        }
+
+        .course-subject {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--orange-500);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .course-name {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--text);
+        }
+
+        .course-meta {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .course-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .course-price {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--orange-500);
+        }
+
+        /* TEACHERS SLIDER */
+        .teachers-slider {
+            overflow: hidden;
+            position: relative;
+        }
+
+        .teachers-track {
+            display: flex;
+            gap: 24px;
+            animation: slideTeachers 40s linear infinite;
+            width: max-content;
+        }
+
+        .teachers-track:hover {
+            animation-play-state: paused;
+        }
+
+        @keyframes slideTeachers {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .teacher-card {
+            flex-shrink: 0;
+            width: 320px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+            text-align: center;
+            transition: all 0.4s ease;
+        }
+
+        .teacher-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--orange-500);
+        }
+
+        .teacher-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin: 0 auto 18px;
+            overflow: hidden;
+            border: 3px solid var(--orange-500);
+            padding: 3px;
+        }
+
+        .teacher-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .teacher-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--text);
+        }
+
+        .teacher-subject {
+            font-size: 0.85rem;
+            color: var(--orange-500);
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .teacher-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        /* GALLERY */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 300px);
+            gap: 16px;
+        }
+
+        .gallery-item {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.1);
+        }
+
+        .gallery-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(249, 115, 22, 0.9), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            display: flex;
+            align-items: flex-end;
+            padding: 24px;
+        }
+
+        .gallery-item:hover .gallery-overlay {
+            opacity: 1;
+        }
+
+        .gallery-title {
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .gallery-item:nth-child(1) {
+            grid-column: span 2;
+            grid-row: span 2;
+        }
+
+        .gallery-item:nth-child(2) { grid-column: span 1; }
+        .gallery-item:nth-child(3) { grid-column: span 1; }
+        .gallery-item:nth-child(4) { grid-column: span 1; }
+        .gallery-item:nth-child(5) { grid-column: span 1; }
+
+        /* FEATURES */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 36px 28px;
+            transition: all 0.4s ease;
+            text-align: center;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--orange-500);
+        }
+
+        .feature-icon {
+            width: 70px;
+            height: 70px;
+            background: rgba(249, 115, 22, 0.1);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: var(--orange-500);
+            margin: 0 auto 20px;
+        }
+
+        .feature-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--text);
+        }
+
+        .feature-desc {
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        /* TESTIMONIALS */
+        .testimonials-slider {
+            overflow: hidden;
+        }
+
+        .testimonials-track {
+            display: flex;
+            gap: 24px;
+            animation: slideTestimonials 35s linear infinite;
+            width: max-content;
+        }
+
+        .testimonials-track:hover {
+            animation-play-state: paused;
+        }
+
+        @keyframes slideTestimonials {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .testimonial-card {
+            flex-shrink: 0;
+            width: 400px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+        }
+
+        .testimonial-stars {
+            color: #FBBF24;
+            margin-bottom: 16px;
+        }
+
+        .testimonial-text {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .testimonial-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+
+        .testimonial-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .testimonial-name {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .testimonial-role {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* PRICING */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            align-items: start;
+        }
+
+        .pricing-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 40px 32px;
+            transition: all 0.4s ease;
+            position: relative;
+        }
+
+        .pricing-card.featured {
+            border-color: var(--orange-500);
+            transform: scale(1.05);
+            box-shadow: var(--shadow-orange);
+        }
+
+        .pricing-popular {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--gradient-orange);
+            color: white;
+            padding: 4px 20px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .pricing-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .pricing-price {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--orange-500);
+            margin: 20px 0;
+        }
+
+        .pricing-price span {
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin: 24px 0;
+        }
+
+        .pricing-features li {
+            padding: 8px 0;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pricing-features li i {
+            color: var(--orange-500);
+        }
+
+        /* CTA */
+        .cta-box {
+            background: var(--gradient-orange);
+            border-radius: 32px;
+            padding: 80px 60px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            color: white;
+        }
+
+        .cta-box::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 400px;
+            height: 400px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+
+        .cta-box h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.8rem;
+            font-weight: 900;
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta-box p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 36px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta-box .btn {
+            background: white;
+            color: var(--orange-700);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* FOOTER */
+        .footer {
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 60px 0 30px;
+        }
+
+        .footer .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .footer-brand p {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin: 16px 0 20px;
+        }
+
+        .footer-social {
+            display: flex;
+            gap: 10px;
+        }
+
+        .footer-social a {
+            width: 40px;
+            height: 40px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .footer-social a:hover {
+            background: var(--orange-500);
+            border-color: var(--orange-500);
+            color: white;
+        }
+
+        .footer-col h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+
+        .footer-col ul {
+            list-style: none;
+        }
+
+        .footer-col ul li {
+            margin-bottom: 10px;
+        }
+
+        .footer-col ul li a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .footer-col ul li a:hover {
+            color: var(--orange-500);
+            padding-left: 4px;
+        }
+
+        .footer-bottom {
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .footer-copyright {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        /* LIVE & VIDEO */
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 24px;
+        }
+
+        .media-card,
+        .course-card,
+        .teacher-card {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .media-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+
+        .media-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--orange-500);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .media-thumb {
+            position: relative;
+            height: 210px;
+            overflow: hidden;
+            background: var(--orange-100);
+        }
+
+        .media-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+
+        .media-card:hover .media-thumb img {
+            transform: scale(1.06);
+        }
+
+        .media-badge {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: var(--gradient-orange);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .media-body {
+            padding: 22px;
+        }
+
+        .media-body h3 {
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+            color: var(--text);
+        }
+
+        .media-body p {
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+            line-height: 1.7;
+            margin-bottom: 14px;
+        }
+
+        .media-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+        }
+
+        .media-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .landing-notice {
+            margin-top: 18px;
+            color: var(--text-secondary);
+            text-align: center;
+            font-size: 0.92rem;
+        }
+
+        /* SCROLL TO TOP */
+        .scroll-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-orange);
+            border: none;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-orange);
+            z-index: 999;
+        }
+
+        .scroll-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .scroll-top:hover {
+            transform: translateY(-3px);
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1200px) {
+            .hero .container {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .hero-stats {
+                justify-content: center;
+            }
+
+            .about-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .gallery-grid {
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: repeat(3, 250px);
+            }
+
+            .gallery-item:nth-child(1) {
+                grid-column: span 2;
+                grid-row: span 1;
+            }
+
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .pricing-grid {
+                grid-template-columns: 1fr;
+                max-width: 400px;
+                margin: 0 auto;
+            }
+
+            .pricing-card.featured {
+                transform: scale(1);
+            }
+        }
+
+        @media (max-width: 992px) {
+            .nav-center {
+                display: none;
+            }
+
+            .nav-center.open {
+                position: absolute;
+                top: calc(100% + 10px);
+                left: 24px;
+                right: 24px;
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 18px;
+                padding: 18px;
+                background: var(--bg);
+                border: 1px solid var(--border);
+                border-radius: 18px;
+                box-shadow: var(--shadow-lg);
+            }
+
+            .nav-center.open .nav-links {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .nav-center.open .nav-links a {
+                display: block;
+            }
+
+            .nav-center.open .nav-actions {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .nav-toggle {
+                display: flex;
+            }
+
+            .hero-title {
+                font-size: 3rem;
+            }
+
+            .section-title {
+                font-size: 2.2rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .media-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero {
+                padding: 100px 0 60px;
+            }
+
+            .hero-title {
+                font-size: 2.4rem;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+            }
+
+            .section {
+                padding: 70px 0;
+            }
+
+            .section-title {
+                font-size: 1.8rem;
+            }
+
+            .gallery-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(5, 250px);
+            }
+
+            .gallery-item:nth-child(1) {
+                grid-column: span 1;
+            }
+
+            .cta-box {
+                padding: 48px 28px;
+            }
+
+            .cta-box h2 {
+                font-size: 2rem;
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .media-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ANIMATIONS */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PRELOADER -->
+    <div class="preloader" id="preloader">
+        <div class="preloader-inner">
+            <div class="preloader-logo">CLIFFS</div>
+            <div class="preloader-bar"></div>
+        </div>
+    </div>
+
+    <!-- HERO BACKGROUND SLIDER -->
+    <div class="hero-bg-slider">
+        <div class="hero-bg-slide active"></div>
+        <div class="hero-bg-slide"></div>
+        <div class="hero-bg-slide"></div>
+    </div>
+
+    <!-- NAVBAR -->
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <a href="/" class="nav-logo">
+                <div class="nav-logo-icon">C</div>
+                <div class="nav-logo-text">Cliff<span>s</span></div>
+            </a>
+
+            <div class="nav-center">
+                <ul class="nav-links">
+                    <li><a href="#home" class="active" data-uz="Bosh sahifa" data-ru="Главная" data-en="Home">Bosh sahifa</a></li>
+                    <li><a href="#about" data-uz="Biz haqimizda" data-ru="О нас" data-en="About">Biz haqimizda</a></li>
+                    <li><a href="#courses" data-uz="Kurslar" data-ru="Курсы" data-en="Courses">Kurslar</a></li>
+                    <li><a href="#teachers" data-uz="O'qituvchilar" data-ru="Преподаватели" data-en="Teachers">O'qituvchilar</a></li>
+                    <li><a href="#gallery" data-uz="Galereya" data-ru="Галерея" data-en="Gallery">Galereya</a></li>
+                    <li><a href="#pricing" data-uz="Narxlar" data-ru="Цены" data-en="Pricing">Narxlar</a></li>
+                </ul>
+
+                <div class="nav-actions">
+                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <select class="lang-select" id="langSelect">
+                        <option value="uz">🇺🇿 O'zbek</option>
+                        <option value="ru">🇷🇺 Русский</option>
+                        <option value="en">🇬🇧 English</option>
+                    </select>
+                    <a href="login.html" class="btn btn-outline" id="navLogin" data-uz="Kirish" data-ru="Войти" data-en="Login">Kirish</a>
+                    <a href="register.html" class="btn btn-primary" data-uz="Boshlash" data-ru="Начать" data-en="Start">Boshlash</a>
+                </div>
+            </div>
+
+            <button class="nav-toggle" id="navToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero" id="home">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i class="fas fa-circle"></i>
+                    <span data-uz="Yangi 2026-yil kurslari" data-ru="Новые курсы 2026" data-en="New 2026 courses">Yangi 2026-yil kurslari</span>
+                </div>
+                <h1 class="hero-title">
+                    <span data-uz="Kelajagingizni" data-ru="Ваше будущее" data-en="Your future">Kelajagingizni</span><br>
+                    <span class="highlight">Cliffs</span> <span data-uz="bilan quring" data-ru="постройте с" data-en="build with">bilan quring</span>
+                </h1>
+                <p class="hero-subtitle" data-uz="O'zbekistondagi eng zamonaviy ta'lim platformasi. Live stream darslar, guruhli videodarslar va online kurslar — hammasi bir joyda." data-ru="Самая современная образовательная платформа в Узбекистане. Live трансляции, групповые видеоуроки и онлайн-курсы — всё в одном месте." data-en="The most modern educational platform in Uzbekistan. Live stream lessons, group video lessons and online courses - all in one place.">
+                    O'zbekistondagi eng zamonaviy ta'lim platformasi. Live stream darslar, guruhli videodarslar va online kurslar — hammasi bir joyda.
+                </p>
+                <div class="hero-buttons">
+                    <a href="#courses" class="btn btn-primary btn-large">
+                        <i class="fas fa-play-circle"></i> <span data-uz="Kurslarni ko'rish" data-ru="Смотреть курсы" data-en="View courses">Kurslarni ko'rish</span>
+                    </a>
+                    <a href="#live" class="btn btn-outline btn-large">
+                        <i class="fas fa-broadcast-tower"></i> <span data-uz="Live darslar" data-ru="Live уроки" data-en="Live lessons">Live darslar</span>
+                    </a>
+                </div>
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <div class="hero-stat-value counter" data-target="15000">0</div>
+                        <div class="hero-stat-label" data-uz="Faol o'quvchilar" data-ru="Активных студентов" data-en="Active students">Faol o'quvchilar</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-value counter" data-target="120">0</div>
+                        <div class="hero-stat-label" data-uz="Professional ustozlar" data-ru="Профессиональных учителей" data-en="Professional teachers">Professional ustozlar</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-value">98%</div>
+                        <div class="hero-stat-label" data-uz="Muvaffaqiyat" data-ru="Успешность" data-en="Success rate">Muvaffaqiyat</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-visual">
+                <div class="hero-image-wrapper">
+                    <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800" alt="Students" class="hero-image">
+                </div>
+                <div class="hero-floating-card floating-card-1">
+                    <div class="floating-stat">
+                        <div class="floating-stat-icon"><i class="fas fa-users"></i></div>
+                        <div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);" data-uz="Hozir online" data-ru="Сейчас онлайн" data-en="Online now">Hozir online</div>
+                            <div style="font-weight: 700; color: var(--text);">2,847</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-floating-card floating-card-2">
+                    <div class="floating-stat">
+                        <div class="floating-stat-icon"><i class="fas fa-star"></i></div>
+                        <div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);" data-uz="Reyting" data-ru="Рейтинг" data-en="Rating">Reyting</div>
+                            <div style="font-weight: 700; color: var(--text);">4.9 / 5.0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="section" id="about">
+        <div class="container">
+            <div class="about-grid">
+                <div class="about-image reveal">
+                    <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800" alt="About Cliffs">
+                    <div class="about-stats">
+                        <div style="font-size: 2rem; font-weight: 800; color: var(--orange-500);">6+</div>
+                        <div style="color: var(--text-secondary);" data-uz="Yillik tajriba" data-ru="Лет опыта" data-en="Years experience">Yillik tajriba</div>
+                    </div>
+                </div>
+                <div class="about-content reveal">
+                    <div class="section-tag" data-uz="Biz haqimizda" data-ru="О нас" data-en="About Us">Biz haqimizda</div>
+                    <h3 data-uz="Premium ta'lim — muvaffaqiyat kaliti" data-ru="Премиальное образование — ключ к успеху" data-en="Premium education - the key to success">Premium ta'lim — muvaffaqiyat kaliti</h3>
+                    <p data-uz="Cliffs o'quv markazi 2020-yildan beri O'zbekistonda sifatli ta'lim xizmatlarini ko'rsatib kelmoqda. Bizning maqsadimiz — har bir o'quvchiga zamonaviy texnologiyalar va professional yondashuv orqali eng yuqori natijalarga erishishda yordam berish." data-ru="Образовательный центр Cliffs с 2020 года предоставляет качественные образовательные услуги в Узбекистане. Наша цель — помочь каждому студенту достичь наилучших результатов с помощью современных технологий и профессионального подхода." data-en="Cliffs Education Center has been providing quality educational services in Uzbekistan since 2020. Our goal is to help every student achieve the highest results through modern technologies and a professional approach.">
+                        Cliffs o'quv markazi 2020-yildan beri O'zbekistonda sifatli ta'lim xizmatlarini ko'rsatib kelmoqda. Bizning maqsadimiz — har bir o'quvchiga zamonaviy texnologiyalar va professional yondashuv orqali eng yuqori natijalarga erishishda yordam berish.
+                    </p>
+                    <div class="about-features">
+                        <div class="about-feature">
+                            <div class="about-feature-icon"><i class="fas fa-check"></i></div>
+                            <span data-uz="Professional o'qituvchilar" data-ru="Профессиональные учителя" data-en="Professional teachers">Professional o'qituvchilar</span>
+                        </div>
+                        <div class="about-feature">
+                            <div class="about-feature-icon"><i class="fas fa-check"></i></div>
+                            <span data-uz="Zamonaviy texnologiyalar" data-ru="Современные технологии" data-en="Modern technologies">Zamonaviy texnologiyalar</span>
+                        </div>
+                        <div class="about-feature">
+                            <div class="about-feature-icon"><i class="fas fa-check"></i></div>
+                            <span data-uz="Individual yondashuv" data-ru="Индивидуальный подход" data-en="Individual approach">Individual yondashuv</span>
+                        </div>
+                        <div class="about-feature">
+                            <div class="about-feature-icon"><i class="fas fa-check"></i></div>
+                            <span data-uz="Natijaga kafolat" data-ru="Гарантия результата" data-en="Result guarantee">Natijaga kafolat</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- COURSES MARQUEE -->
+    <section class="section" id="courses" style="background: var(--surface);">
+        <div class="container">
+            <div class="section-header reveal">
+                <div class="section-tag" data-uz="Kurslar" data-ru="Курсы" data-en="Courses">Kurslar</div>
+                <h2 class="section-title" data-uz="Bizning <span class='highlight'>kurslarimiz</span>" data-ru="Наши <span class='highlight'>курсы</span>" data-en="Our <span class='highlight'>courses</span>">Bizning <span class="highlight">kurslarimiz</span></h2>
+                <p class="section-desc" data-uz="Har bir fanga ixtisoslashgan professional dasturlar" data-ru="Профессиональные программы по каждому предмету" data-en="Professional programs for each subject">Har bir fanga ixtisoslashgan professional dasturlar</p>
+            </div>
+
+            <div class="courses-marquee">
+                <div class="marquee-track">
+                    <!-- Course 1 -->
+                    <div class="course-card">
+                        <div class="course-image">
+                            <img src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=600" alt="Mathematics">
+                            <span class="course-badge">Live</span>
+                        </div>
+                        <div class="course-body">
+                            <div class="course-subject" data-uz="Matematika" data-ru="Математика" data-en="Mathematics">Matematika</div>
+                            <div class="course-name" data-uz="DTM Matematika — To'liq tayyorgarlik" data-ru="ЦТ Математика — Полная подготовка" data-en="DTM Mathematics — Full preparation">DTM Matematika — To'liq tayyorgarlik</div>
+                            <div class="course-meta">
+                                <span><i class="fas fa-clock"></i> 6 oy</span>
+                                <span><i class="fas fa-play-circle"></i> 120 dars</span>
+                            </div>
+                            <div class="course-footer">
+                                <div class="course-price">450,000 so'm</div>
+                                <div style="color: #FBBF24;"><i class="fas fa-star"></i> 4.9</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Course 2 -->
+                    <div class="course-card">
+                        <div class="course-image">
+                            <img src="https://images.unsplash.com/photo-1546412414-e1885259563a?w=600" alt="English">
+                            <span class="course-badge">Video</span>
+                        </div>
+                        <div class="course-body">
+                            <div class="course-subject" data-uz="Ingliz tili" data-ru="Английский" data-en="English">Ingliz tili</div>
+                            <div class="course-name" data-uz="IELTS Academic — 7.5+ ball" data-ru="IELTS Academic — 7.5+ баллов" data-en="IELTS Academic — 7.5+ score">IELTS Academic — 7.5+ ball</div>
+                            <div class="course-meta">
+                                <span><i class="fas fa-clock"></i> 4 oy</span>
+                                <span><i class="fas fa-play-circle"></i> 96 dars</span>
+                            </div>
+                            <div class="course-footer">
+                                <div class="course-price">380,000 so'm</div>
+                                <div style="color: #FBBF24;"><i class="fas fa-star"></i> 4.8</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Course 3 -->
+                    <div class="course-card">
+                        <div class="course-image">
+                            <img src="https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?w=600" alt="Physics">
+                            <span class="course-badge">Guruhli</span>
+                        </div>
+                        <div class="course-body">
+                            <div class="course-subject" data-uz="Fizika" data-ru="Физика" data-en="Physics">Fizika</div>
+                            <div class="course-name" data-uz="Fizika — Murakkab masalalar" data-ru="Физика — Сложные задачи" data-en="Physics — Complex problems">Fizika — Murakkab masalalar</div>
+                            <div class="course-meta">
+                                <span><i class="fas fa-clock"></i> 3 oy</span>
+                                <span><i class="fas fa-play-circle"></i> 48 dars</span>
+                            </div>
+                            <div class="course-footer">
+                                <div class="course-price">320,000 so'm</div>
+                                <div style="color: #FBBF24;"><i class="fas fa-star"></i> 4.9</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Course 4 -->
+                    <div class="course-card">
+                        <div class="course-image">
+                            <img src="https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=600" alt="Chemistry">
+                            <span class="course-badge">To'plam</span>
+                        </div>
+                        <div class="course-body">
+                            <div class="course-subject" data-uz="Kimyo" data-ru="Химия" data-en="Chemistry">Kimyo</div>
+                            <div class="course-name" data-uz="Kimyo — To'liq to'plam" data-ru="Химия — Полный комплект" data-en="Chemistry — Full collection">Kimyo — To'liq to'plam</div>
+                            <div class="course-meta">
+                                <span><i class="fas fa-clock"></i> Cheksiz</span>
+                                <span><i class="fas fa-play-circle"></i> 200+ dars</span>
+                            </div>
+                            <div class="course-footer">
+                                <div class="course-price">550,000 so'm</div>
+                                <div style="color: #FBBF24;"><i class="fas fa-star"></i> 4.7</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Duplicate for infinite scroll -->
+                    <div class="course-card">
+                        <div class="course-image">
+                            <img src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=600" alt="Mathematics">
+                            <span class="course-badge">Live</span>
+                        </div>
+                        <div class="course-body">
+                            <div class="course-subject" data-uz="Matematika" data-ru="Математика" data-en="Mathematics">Matematika</div>
+                            <div class="course-name" data-uz="DTM Matematika — To'liq tayyorgarlik" data-ru="ЦТ Математика — Полная подготовка" data-en="DTM Mathematics — Full preparation">DTM Matematika — To'liq tayyorgarlik</div>
+                            <div class="course-meta">
+                                <span><i class="fas fa-clock"></i> 6 oy</span>
+                                <span><i class="fas fa-play-circle"></i> 120 dars</span>
+                            </div>
+                            <div class="course-footer">
+                                <div class="course-price">450,000 so'm</div>
+                                <div style="color: #FBBF24;"><i class="fas fa-star"></i> 4.9</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="course-card">
+                        <div class="course-image">
+                            <img src="https://images.unsplash.com/photo-1546412414-e1885259563a?w=600" alt="English">
+                            <span class="course-badge">Video</span>
+                        </div>
+                        <div class="course-body">
+                            <div class="course-subject" data-uz="Ingliz tili" data-ru="Английский" data-en="English">Ingliz tili</div>
+                            <div class="course-name" data-uz="IELTS Academic — 7.5+ ball" data-ru="IELTS Academic — 7.5+ баллов" data-en="IELTS Academic — 7.5+ score">IELTS Academic — 7.5+ ball</div>
+                            <div class="course-meta">
+                                <span><i class="fas fa-clock"></i> 4 oy</span>
+                                <span><i class="fas fa-play-circle"></i> 96 dars</span>
+                            </div>
+                            <div class="course-footer">
+                                <div class="course-price">380,000 so'm</div>
+                                <div style="color: #FBBF24;"><i class="fas fa-star"></i> 4.8</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="course-card">
+                        <div class="course-image">
+                            <img src="https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?w=600" alt="Physics">
+                            <span class="course-badge">Guruhli</span>
+                        </div>
+                        <div class="course-body">
+                            <div class="course-subject" data-uz="Fizika" data-ru="Физика" data-en="Physics">Fizika</div>
+                            <div class="course-name" data-uz="Fizika — Murakkab masalalar" data-ru="Физика — Сложные задачи" data-en="Physics — Complex problems">Fizika — Murakkab masalalar</div>
+                            <div class="course-meta">
+                                <span><i class="fas fa-clock"></i> 3 oy</span>
+                                <span><i class="fas fa-play-circle"></i> 48 dars</span>
+                            </div>
+                            <div class="course-footer">
+                                <div class="course-price">320,000 so'm</div>
+                                <div style="color: #FBBF24;"><i class="fas fa-star"></i> 4.9</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="course-card">
+                        <div class="course-image">
+                            <img src="https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=600" alt="Chemistry">
+                            <span class="course-badge">To'plam</span>
+                        </div>
+                        <div class="course-body">
+                            <div class="course-subject" data-uz="Kimyo" data-ru="Химия" data-en="Chemistry">Kimyo</div>
+                            <div class="course-name" data-uz="Kimyo — To'liq to'plam" data-ru="Химия — Полный комплект" data-en="Chemistry — Full collection">Kimyo — To'liq to'plam</div>
+                            <div class="course-meta">
+                                <span><i class="fas fa-clock"></i> Cheksiz</span>
+                                <span><i class="fas fa-play-circle"></i> 200+ dars</span>
+                            </div>
+                            <div class="course-footer">
+                                <div class="course-price">550,000 so'm</div>
+                                <div style="color: #FBBF24;"><i class="fas fa-star"></i> 4.7</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TEACHERS -->
+    <section class="section" id="teachers">
+        <div class="container">
+            <div class="section-header reveal">
+                <div class="section-tag" data-uz="O'qituvchilar" data-ru="Преподаватели" data-en="Teachers">O'qituvchilar</div>
+                <h2 class="section-title" data-uz="Professional <span class='highlight'>ustozlarimiz</span>" data-ru="Наши <span class='highlight'>преподаватели</span>" data-en="Our <span class='highlight'>teachers</span>">Professional <span class="highlight">ustozlarimiz</span></h2>
+                <p class="section-desc" data-uz="Eng tajribali va malakali mutaxassislar" data-ru="Самые опытные и квалифицированные специалисты" data-en="Most experienced and qualified specialists">Eng tajribali va malakali mutaxassislar</p>
+            </div>
+
+            <div class="teachers-slider">
+                <div class="teachers-track">
+                    <!-- Teacher 1 -->
+                    <div class="teacher-card">
+                        <div class="teacher-avatar">
+                            <img src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=400" alt="Teacher">
+                        </div>
+                        <div class="teacher-name">Prof. Karimov A.</div>
+                        <div class="teacher-subject" data-uz="Matematika" data-ru="Математика" data-en="Mathematics">Matematika</div>
+                        <div class="teacher-desc" data-uz="15 yillik tajriba, PhD. DTM ekspertlar kengashi a'zosi" data-ru="15 лет опыта, PhD. Член экспертного совета ЦТ" data-en="15 years experience, PhD. DTM expert council member">15 yillik tajriba, PhD. DTM ekspertlar kengashi a'zosi</div>
+                        <div style="display: flex; justify-content: center; gap: 20px; color: var(--text-secondary); font-size: 0.85rem;">
+                            <span><i class="fas fa-users" style="color: var(--orange-500);"></i> 5,200+</span>
+                            <span><i class="fas fa-star" style="color: #FBBF24;"></i> 4.9</span>
+                        </div>
+                    </div>
+
+                    <!-- Teacher 2 -->
+                    <div class="teacher-card">
+                        <div class="teacher-avatar">
+                            <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400" alt="Teacher">
+                        </div>
+                        <div class="teacher-name">Dr. Rahimova S.</div>
+                        <div class="teacher-subject" data-uz="Fizika" data-ru="Физика" data-en="Physics">Fizika</div>
+                        <div class="teacher-desc" data-uz="12 yillik tajriba, Fizika fanlari doktori" data-ru="12 лет опыта, доктор физико-математических наук" data-en="12 years experience, Doctor of Physical Sciences">12 yillik tajriba, Fizika fanlari doktori</div>
+                        <div style="display: flex; justify-content: center; gap: 20px; color: var(--text-secondary); font-size: 0.85rem;">
+                            <span><i class="fas fa-users" style="color: var(--orange-500);"></i> 3,800+</span>
+                            <span><i class="fas fa-star" style="color: #FBBF24;"></i> 4.8</span>
+                        </div>
+                    </div>
+
+                    <!-- Teacher 3 -->
+                    <div class="teacher-card">
+                        <div class="teacher-avatar">
+                            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400" alt="Teacher">
+                        </div>
+                        <div class="teacher-name">Teacher James</div>
+                        <div class="teacher-subject" data-uz="Ingliz tili (IELTS)" data-ru="Английский (IELTS)" data-en="English (IELTS)">Ingliz tili (IELTS)</div>
+                        <div class="teacher-desc" data-uz="Native speaker, IELTS 9.0, 10 yillik tajriba" data-ru="Носитель языка, IELTS 9.0, 10 лет опыта" data-en="Native speaker, IELTS 9.0, 10 years experience">Native speaker, IELTS 9.0, 10 yillik tajriba</div>
+                        <div style="display: flex; justify-content: center; gap: 20px; color: var(--text-secondary); font-size: 0.85rem;">
+                            <span><i class="fas fa-users" style="color: var(--orange-500);"></i> 6,100+</span>
+                            <span><i class="fas fa-star" style="color: #FBBF24;"></i> 5.0</span>
+                        </div>
+                    </div>
+
+                    <!-- Teacher 4 -->
+                    <div class="teacher-card">
+                        <div class="teacher-avatar">
+                            <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400" alt="Teacher">
+                        </div>
+                        <div class="teacher-name">Prof. Toshmatov B.</div>
+                        <div class="teacher-subject" data-uz="Kimyo" data-ru="Химия" data-en="Chemistry">Kimyo</div>
+                        <div class="teacher-desc" data-uz="18 yillik tajriba, Kimyo fanlari nomzodi" data-ru="18 лет опыта, кандидат химических наук" data-en="18 years experience, Candidate of Chemical Sciences">18 yillik tajriba, Kimyo fanlari nomzodi</div>
+                        <div style="display: flex; justify-content: center; gap: 20px; color: var(--text-secondary); font-size: 0.85rem;">
+                            <span><i class="fas fa-users" style="color: var(--orange-500);"></i> 4,500+</span>
+                            <span><i class="fas fa-star" style="color: #FBBF24;"></i> 4.9</span>
+                        </div>
+                    </div>
+
+                    <!-- Teacher 5 -->
+                    <div class="teacher-card">
+                        <div class="teacher-avatar">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400" alt="Teacher">
+                        </div>
+                        <div class="teacher-name">Dr. Akramova M.</div>
+                        <div class="teacher-subject" data-uz="Biologiya" data-ru="Биология" data-en="Biology">Biologiya</div>
+                        <div class="teacher-desc" data-uz="14 yillik tajriba, Tibbiyot fanlari doktori" data-ru="14 лет опыта, доктор медицинских наук" data-en="14 years experience, Doctor of Medical Sciences">14 yillik tajriba, Tibbiyot fanlari doktori</div>
+                        <div style="display: flex; justify-content: center; gap: 20px; color: var(--text-secondary); font-size: 0.85rem;">
+                            <span><i class="fas fa-users" style="color: var(--orange-500);"></i> 3,200+</span>
+                            <span><i class="fas fa-star" style="color: #FBBF24;"></i> 4.9</span>
+                        </div>
+                    </div>
+
+                    <!-- Duplicate for infinite scroll -->
+                    <div class="teacher-card">
+                        <div class="teacher-avatar">
+                            <img src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=400" alt="Teacher">
+                        </div>
+                        <div class="teacher-name">Prof. Karimov A.</div>
+                        <div class="teacher-subject" data-uz="Matematika" data-ru="Математика" data-en="Mathematics">Matematika</div>
+                        <div class="teacher-desc" data-uz="15 yillik tajriba, PhD. DTM ekspertlar kengashi a'zosi" data-ru="15 лет опыта, PhD. Член экспертного совета ЦТ" data-en="15 years experience, PhD. DTM expert council member">15 yillik tajriba, PhD. DTM ekspertlar kengashi a'zosi</div>
+                        <div style="display: flex; justify-content: center; gap: 20px; color: var(--text-secondary); font-size: 0.85rem;">
+                            <span><i class="fas fa-users" style="color: var(--orange-500);"></i> 5,200+</span>
+                            <span><i class="fas fa-star" style="color: #FBBF24;"></i> 4.9</span>
+                        </div>
+                    </div>
+
+                    <div class="teacher-card">
+                        <div class="teacher-avatar">
+                            <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400" alt="Teacher">
+                        </div>
+                        <div class="teacher-name">Dr. Rahimova S.</div>
+                        <div class="teacher-subject" data-uz="Fizika" data-ru="Физика" data-en="Physics">Fizika</div>
+                        <div class="teacher-desc" data-uz="12 yillik tajriba, Fizika fanlari doktori" data-ru="12 лет опыта, доктор физико-математических наук" data-en="12 years experience, Doctor of Physical Sciences">12 yillik tajriba, Fizika fanlari doktori</div>
+                        <div style="display: flex; justify-content: center; gap: 20px; color: var(--text-secondary); font-size: 0.85rem;">
+                            <span><i class="fas fa-users" style="color: var(--orange-500);"></i> 3,800+</span>
+                            <span><i class="fas fa-star" style="color: #FBBF24;"></i> 4.8</span>
+                        </div>
+                    </div>
+
+                    <div class="teacher-card">
+                        <div class="teacher-avatar">
+                            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400" alt="Teacher">
+                        </div>
+                        <div class="teacher-name">Teacher James</div>
+                        <div class="teacher-subject" data-uz="Ingliz tili (IELTS)" data-ru="Английский (IELTS)" data-en="English (IELTS)">Ingliz tili (IELTS)</div>
+                        <div class="teacher-desc" data-uz="Native speaker, IELTS 9.0, 10 yillik tajriba" data-ru="Носитель языка, IELTS 9.0, 10 лет опыта" data-en="Native speaker, IELTS 9.0, 10 years experience">Native speaker, IELTS 9.0, 10 yillik tajriba</div>
+                        <div style="display: flex; justify-content: center; gap: 20px; color: var(--text-secondary); font-size: 0.85rem;">
+                            <span><i class="fas fa-users" style="color: var(--orange-500);"></i> 6,100+</span>
+                            <span><i class="fas fa-star" style="color: #FBBF24;"></i> 5.0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- GALLERY -->
+    <section class="section" id="gallery" style="background: var(--surface);">
+        <div class="container">
+            <div class="section-header reveal">
+                <div class="section-tag" data-uz="Galereya" data-ru="Галерея" data-en="Gallery">Galereya</div>
+                <h2 class="section-title" data-uz="O'quv markaz <span class='highlight'>hayotidan</span>" data-ru="Из <span class='highlight'>жизни</span> центра" data-en="From center <span class='highlight'>life</span>">O'quv markaz <span class="highlight">hayotidan</span></h2>
+                <p class="section-desc" data-uz="Bizning o'quv markazimizdagi eng yaxshi lahzalar" data-ru="Лучшие моменты в нашем учебном центре" data-en="Best moments in our educational center">Bizning o'quv markazimizdagi eng yaxshi lahzalar</p>
+            </div>
+
+            <div class="gallery-grid">
+                <div class="gallery-item reveal">
+                    <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800" alt="Gallery">
+                    <div class="gallery-overlay">
+                        <div class="gallery-title" data-uz="Dars jarayoni" data-ru="Учебный процесс" data-en="Learning process">Dars jarayoni</div>
+                    </div>
+                </div>
+                <div class="gallery-item reveal">
+                    <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600" alt="Gallery">
+                    <div class="gallery-overlay">
+                        <div class="gallery-title" data-uz="Guruhli mashg'ulot" data-ru="Групповое занятие" data-en="Group session">Guruhli mashg'ulot</div>
+                    </div>
+                </div>
+                <div class="gallery-item reveal">
+                    <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=600" alt="Gallery">
+                    <div class="gallery-overlay">
+                        <div class="gallery-title" data-uz="Online dars" data-ru="Онлайн урок" data-en="Online lesson">Online dars</div>
+                    </div>
+                </div>
+                <div class="gallery-item reveal">
+                    <img src="https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600" alt="Gallery">
+                    <div class="gallery-overlay">
+                        <div class="gallery-title" data-uz="Imtihon tayyorgarligi" data-ru="Подготовка к экзамену" data-en="Exam preparation">Imtihon tayyorgarligi</div>
+                    </div>
+                </div>
+                <div class="gallery-item reveal">
+                    <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600" alt="Gallery">
+                    <div class="gallery-overlay">
+                        <div class="gallery-title" data-uz="Kompyuter sinfi" data-ru="Компьютерный класс" data-en="Computer class">Kompyuter sinfi</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="section" id="features">
+        <div class="container">
+            <div class="section-header reveal">
+                <div class="section-tag" data-uz="Afzalliklar" data-ru="Преимущества" data-en="Advantages">Afzalliklar</div>
+                <h2 class="section-title" data-uz="Nima uchun <span class='highlight'>Cliffs</span>?" data-ru="Почему <span class='highlight'>Cliffs</span>?" data-en="Why <span class='highlight'>Cliffs</span>?">Nima uchun <span class="highlight">Cliffs</span>?</h2>
+                <p class="section-desc" data-uz="Premium ta'lim tajribasi" data-ru="Премиальный образовательный опыт" data-en="Premium educational experience">Premium ta'lim tajribasi</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card reveal">
+                    <div class="feature-icon"><i class="fas fa-broadcast-tower"></i></div>
+                    <h3 class="feature-title" data-uz="Live Stream Darslar" data-ru="Live Трансляции" data-en="Live Stream Lessons">Live Stream Darslar</h3>
+                    <p class="feature-desc" data-uz="Real vaqtda o'qituvchi bilan muloqot qiling" data-ru="Общайтесь с учителем в реальном времени" data-en="Communicate with teacher in real time">Real vaqtda o'qituvchi bilan muloqot qiling</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon"><i class="fas fa-users"></i></div>
+                    <h3 class="feature-title" data-uz="Guruhli Darslar" data-ru="Групповые занятия" data-en="Group Lessons">Guruhli Darslar</h3>
+                    <p class="feature-desc" data-uz="Kichik guruhlarda interaktiv darslar" data-ru="Интерактивные занятия в малых группах" data-en="Interactive lessons in small groups">Kichik guruhlarda interaktiv darslar</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon"><i class="fas fa-film"></i></div>
+                    <h3 class="feature-title" data-uz="Videodarslar" data-ru="Видеоуроки" data-en="Video Lessons">Videodarslar</h3>
+                    <p class="feature-desc" data-uz="Istalgan vaqtda qayta ko'ring" data-ru="Смотрите в любое время" data-en="Watch anytime">Istalgan vaqtda qayta ko'ring</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon"><i class="fas fa-mobile-alt"></i></div>
+                    <h3 class="feature-title" data-uz="Mobile Ilova" data-ru="Мобильное приложение" data-en="Mobile App">Mobile Ilova</h3>
+                    <p class="feature-desc" data-uz="Telefoningizdan o'qing" data-ru="Учитесь с телефона" data-en="Learn from your phone">Telefoningizdan o'qing</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon"><i class="fas fa-certificate"></i></div>
+                    <h3 class="feature-title" data-uz="Sertifikat" data-ru="Сертификат" data-en="Certificate">Sertifikat</h3>
+                    <p class="feature-desc" data-uz="Kursni tugatgach sertifikat" data-ru="Сертификат после курса" data-en="Certificate after course">Kursni tugatgach sertifikat</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="feature-icon"><i class="fas fa-headset"></i></div>
+                    <h3 class="feature-title" data-uz="Qo'llab-quvvatlash" data-ru="Поддержка" data-en="Support">Qo'llab-quvvatlash</h3>
+                    <p class="feature-desc" data-uz="24/7 texnik yordam" data-ru="Техническая поддержка 24/7" data-en="24/7 technical support">24/7 texnik yordam</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- LIVE & VIDEO -->
+    <section class="section" id="live" style="background: var(--surface);">
+        <div class="container">
+            <div class="section-header reveal">
+                <div class="section-tag" data-uz="Live va video" data-ru="Live и видео" data-en="Live and video">Live va video</div>
+                <h2 class="section-title" data-uz="Platformadagi <span class='highlight'>darslar</span>" data-ru="Уроки на <span class='highlight'>платформе</span>" data-en="<span class='highlight'>Lessons</span> on the platform">Platformadagi <span class="highlight">darslar</span></h2>
+                <p class="section-desc" data-uz="Aktiv live sessiyalar va video darslar backenddan avtomatik chiqadi." data-ru="Активные live-сессии и видеоуроки автоматически берутся из backend." data-en="Active live sessions and video lessons are loaded from the backend automatically.">Aktiv live sessiyalar va video darslar backenddan avtomatik chiqadi.</p>
+            </div>
+
+            <div class="media-grid" id="mediaGrid"></div>
+            <p class="landing-notice" id="mediaNotice"></p>
+        </div>
+    </section>
+
+    <!-- TESTIMONIALS -->
+    <section class="section" id="testimonials" style="background: var(--surface);">
+        <div class="container">
+            <div class="section-header reveal">
+                <div class="section-tag" data-uz="Fikrlar" data-ru="Отзывы" data-en="Reviews">Fikrlar</div>
+                <h2 class="section-title" data-uz="O'quvchilar <span class='highlight'>fikrlari</span>" data-ru="Отзывы <span class='highlight'>студентов</span>" data-en="Students <span class='highlight'>reviews</span>">O'quvchilar <span class="highlight">fikrlari</span></h2>
+                <p class="section-desc" data-uz="Muvaffaqiyat hikoyalari" data-ru="Истории успеха" data-en="Success stories">Muvaffaqiyat hikoyalari</p>
+            </div>
+
+            <div class="testimonials-slider">
+                <div class="testimonials-track">
+                    <div class="testimonial-card">
+                        <div class="testimonial-stars">
+                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                        </div>
+                        <p class="testimonial-text" data-uz="Cliffs orqali DTM ga tayyorlandim va Tibbiyot institutiga kirdim! Prof. Karimovning matematika darslari hayotimni o'zgartirdi." data-ru="Подготовился к ЦТ через Cliffs и поступил в Медицинский институт! Уроки математики проф. Каримова изменили мою жизнь." data-en="I prepared for DTM through Cliffs and entered the Medical Institute! Prof. Karimov's math lessons changed my life.">Cliffs orqali DTM ga tayyorlandim va Tibbiyot institutiga kirdim! Prof. Karimovning matematika darslari hayotimni o'zgartirdi.</p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar">
+                                <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200" alt="Student">
+                            </div>
+                            <div>
+                                <div class="testimonial-name">Aziza Karimova</div>
+                                <div class="testimonial-role" data-uz="Tibbiyot instituti talabasi" data-ru="Студентка мед. института" data-en="Medical Institute student">Tibbiyot instituti talabasi</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="testimonial-card">
+                        <div class="testimonial-stars">
+                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                        </div>
+                        <p class="testimonial-text" data-uz="IELTS dan 7.5 oldim! Teacher James bilan har kuni live darslarda qatnashdim. Eng yaxshi investitsiya hayotimda." data-ru="Получил 7.5 по IELTS! Каждый день участвовал в live уроках с Teacher James. Лучшая инвестиция в моей жизни." data-en="I got 7.5 in IELTS! I attended live lessons with Teacher James every day. The best investment in my life.">IELTS dan 7.5 oldim! Teacher James bilan har kuni live darslarda qatnashdim. Eng yaxshi investitsiya hayotimda.</p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar">
+                                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200" alt="Student">
+                            </div>
+                            <div>
+                                <div class="testimonial-name">Jasur Nurmatov</div>
+                                <div class="testimonial-role" data-uz="IELTS 7.5" data-ru="IELTS 7.5" data-en="IELTS 7.5">IELTS 7.5</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="testimonial-card">
+                        <div class="testimonial-stars">
+                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                        </div>
+                        <p class="testimonial-text" data-uz="Guruhli darslar juda samarali. Har bir o'quvchiga e'tibor berishadi. Fizika fanidan 85 ball topladim!" data-ru="Групповые занятия очень эффективны. Каждому студенту уделяют внимание. Получил 85 баллов по физике!" data-en="Group lessons are very effective. They pay attention to every student. I got 85 points in Physics!">Guruhli darslar juda samarali. Har bir o'quvchiga e'tibor berishadi. Fizika fanidan 85 ball topladim!</p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar">
+                                <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200" alt="Student">
+                            </div>
+                            <div>
+                                <div class="testimonial-name">Mohira Rustamova</div>
+                                <div class="testimonial-role" data-uz="DTM — Fizika 85 ball" data-ru="ЦТ — Физика 85 баллов" data-en="DTM — Physics 85 points">DTM — Fizika 85 ball</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="testimonial-card">
+                        <div class="testimonial-stars">
+                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                        </div>
+                        <p class="testimonial-text" data-uz="Online platform juda qulay. Istalgan joydan darslarga ulanish mumkin. Kimyo fanidan 90 ball oldim!" data-ru="Онлайн платформа очень удобна. Можно подключиться к урокам из любого места. Получил 90 баллов по химии!" data-en="Online platform is very convenient. You can connect to lessons from anywhere. I got 90 points in Chemistry!">Online platform juda qulay. Istalgan joydan darslarga ulanish mumkin. Kimyo fanidan 90 ball oldim!</p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar">
+                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200" alt="Student">
+                            </div>
+                            <div>
+                                <div class="testimonial-name">Rustam Aliyev</div>
+                                <div class="testimonial-role" data-uz="DTM — Kimyo 90 ball" data-ru="ЦТ — Химия 90 баллов" data-en="DTM — Chemistry 90 points">DTM — Kimyo 90 ball</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Duplicate -->
+                    <div class="testimonial-card">
+                        <div class="testimonial-stars">
+                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                        </div>
+                        <p class="testimonial-text" data-uz="Cliffs orqali DTM ga tayyorlandim va Tibbiyot institutiga kirdim! Prof. Karimovning matematika darslari hayotimni o'zgartirdi." data-ru="Подготовился к ЦТ через Cliffs и поступил в Медицинский институт! Уроки математики проф. Каримова изменили мою жизнь." data-en="I prepared for DTM through Cliffs and entered the Medical Institute! Prof. Karimov's math lessons changed my life.">Cliffs orqali DTM ga tayyorlandim va Tibbiyot institutiga kirdim! Prof. Karimovning matematika darslari hayotimni o'zgartirdi.</p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar">
+                                <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200" alt="Student">
+                            </div>
+                            <div>
+                                <div class="testimonial-name">Aziza Karimova</div>
+                                <div class="testimonial-role" data-uz="Tibbiyot instituti talabasi" data-ru="Студентка мед. института" data-en="Medical Institute student">Tibbiyot instituti talabasi</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="testimonial-card">
+                        <div class="testimonial-stars">
+                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                        </div>
+                        <p class="testimonial-text" data-uz="IELTS dan 7.5 oldim! Teacher James bilan har kuni live darslarda qatnashdim. Eng yaxshi investitsiya hayotimda." data-ru="Получил 7.5 по IELTS! Каждый день участвовал в live уроках с Teacher James. Лучшая инвестиция в моей жизни." data-en="I got 7.5 in IELTS! I attended live lessons with Teacher James every day. The best investment in my life.">IELTS dan 7.5 oldim! Teacher James bilan har kuni live darslarda qatnashdim. Eng yaxshi investitsiya hayotimda.</p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar">
+                                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200" alt="Student">
+                            </div>
+                            <div>
+                                <div class="testimonial-name">Jasur Nurmatov</div>
+                                <div class="testimonial-role" data-uz="IELTS 7.5" data-ru="IELTS 7.5" data-en="IELTS 7.5">IELTS 7.5</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRICING -->
+    <section class="section" id="pricing">
+        <div class="container">
+            <div class="section-header reveal">
+                <div class="section-tag" data-uz="Narxlar" data-ru="Цены" data-en="Pricing">Narxlar</div>
+                <h2 class="section-title" data-uz="Mos <span class='highlight'>tarifni</span> tanlang" data-ru="Выберите подходящий <span class='highlight'>тариф</span>" data-en="Choose the right <span class='highlight'>plan</span>">Mos <span class="highlight">tarifni</span> tanlang</h2>
+                <p class="section-desc" data-uz="Har bir byudjetga mos tariflar" data-ru="Тарифы для любого бюджета" data-en="Plans for every budget">Har bir byudjetga mos tariflar</p>
+            </div>
+
+            <div class="pricing-grid">
+                <div class="pricing-card reveal">
+                    <div class="pricing-name" data-uz="Basic" data-ru="Базовый" data-en="Basic">Basic</div>
+                    <div class="pricing-price">199,000 <span data-uz="so'm/oy" data-ru="сум/мес" data-en="sum/month">so'm/oy</span></div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> <span data-uz="1 fan videodarslar" data-ru="1 предмет видео" data-en="1 subject videos">1 fan videodarslar</span></li>
+                        <li><i class="fas fa-check"></i> <span data-uz="Cheksiz qayta ko'rish" data-ru="Безлимитный просмотр" data-en="Unlimited viewing">Cheksiz qayta ko'rish</span></li>
+                        <li><i class="fas fa-check"></i> <span data-uz="Testlar va konspektlar" data-ru="Тесты и конспекты" data-en="Tests and notes">Testlar va konspektlar</span></li>
+                        <li style="opacity: 0.4;"><i class="fas fa-times"></i> <span data-uz="Live darslar" data-ru="Live уроки" data-en="Live lessons">Live darslar</span></li>
+                    </ul>
+                    <a href="register.html" class="btn btn-outline" style="width: 100%;" data-uz="Tanlash" data-ru="Выбрать" data-en="Choose">Tanlash</a>
+                </div>
+
+                <div class="pricing-card featured reveal">
+                    <div class="pricing-popular" data-uz="Eng mashhur" data-ru="Популярный" data-en="Popular">Eng mashhur</div>
+                    <div class="pricing-name" data-uz="Premium" data-ru="Премиум" data-en="Premium">Premium</div>
+                    <div class="pricing-price">449,000 <span data-uz="so'm/oy" data-ru="сум/мес" data-en="sum/month">so'm/oy</span></div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> <span data-uz="3 fangacha" data-ru="До 3 предметов" data-en="Up to 3 subjects">3 fangacha</span></li>
+                        <li><i class="fas fa-check"></i> <span data-uz="Live stream darslar" data-ru="Live трансляции" data-en="Live stream lessons">Live stream darslar</span></li>
+                        <li><i class="fas fa-check"></i> <span data-uz="Guruhli darslar" data-ru="Групповые занятия" data-en="Group lessons">Guruhli darslar</span></li>
+                        <li><i class="fas fa-check"></i> <span data-uz="Chat orqali savol-javob" data-ru="Вопросы в чате" data-en="Chat Q&A">Chat orqali savol-javob</span></li>
+                    </ul>
+                    <a href="register.html" class="btn btn-primary" style="width: 100%;" data-uz="Tanlash" data-ru="Выбрать" data-en="Choose">Tanlash</a>
+                </div>
+
+                <div class="pricing-card reveal">
+                    <div class="pricing-name" data-uz="VIP" data-ru="VIP" data-en="VIP">VIP</div>
+                    <div class="pricing-price">799,000 <span data-uz="so'm/oy" data-ru="сум/мес" data-en="sum/month">so'm/oy</span></div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> <span data-uz="Barcha fanlar" data-ru="Все предметы" data-en="All subjects">Barcha fanlar</span></li>
+                        <li><i class="fas fa-check"></i> <span data-uz="Barcha kurslar" data-ru="Все курсы" data-en="All courses">Barcha kurslar</span></li>
+                        <li><i class="fas fa-check"></i> <span data-uz="Shaxsiy mentor" data-ru="Личный ментор" data-en="Personal mentor">Shaxsiy mentor</span></li>
+                        <li><i class="fas fa-check"></i> <span data-uz="24/7 qo'llab-quvvatlash" data-ru="Поддержка 24/7" data-en="24/7 support">24/7 qo'llab-quvvatlash</span></li>
+                    </ul>
+                    <a href="register.html" class="btn btn-outline" style="width: 100%;" data-uz="Tanlash" data-ru="Выбрать" data-en="Choose">Tanlash</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="section" id="contact">
+        <div class="container">
+            <div class="cta-box reveal">
+                <h2 data-uz="Kelajagingizni bugun boshlang" data-ru="Начните своё будущее сегодня" data-en="Start your future today">Kelajagingizni bugun boshlang</h2>
+                <p data-uz="Birinchi dars bepul — hoziroq ro'yxatdan o'ting" data-ru="Первый урок бесплатно — зарегистрируйтесь сейчас" data-en="First lesson free — register now">Birinchi dars bepul — hoziroq ro'yxatdan o'ting</p>
+                <a href="register.html" class="btn btn-large">
+                    <i class="fas fa-rocket"></i> <span data-uz="Bepul boshlash" data-ru="Начать бесплатно" data-en="Start free">Bepul boshlash</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="/" class="nav-logo" style="margin-bottom: 16px;">
+                        <div class="nav-logo-icon">C</div>
+                        <div class="nav-logo-text">Cliff<span>s</span></div>
+                    </a>
+                    <p data-uz="O'zbekistondagi eng zamonaviy premium ta'lim platformasi. 2020-yildan beri 15,000+ o'quvchiga sifatli ta'lim." data-ru="Самая современная премиальная образовательная платформа в Узбекистане. С 2020 года качественное образование для 15,000+ студентов." data-en="The most modern premium educational platform in Uzbekistan. Quality education for 15,000+ students since 2020.">O'zbekistondagi eng zamonaviy premium ta'lim platformasi. 2020-yildan beri 15,000+ o'quvchiga sifatli ta'lim.</p>
+                    <div class="footer-social">
+                        <a href="#contact"><i class="fab fa-telegram-plane"></i></a>
+                        <a href="#gallery"><i class="fab fa-instagram"></i></a>
+                        <a href="videos.html"><i class="fab fa-youtube"></i></a>
+                        <a href="#contact"><i class="fab fa-facebook-f"></i></a>
+                    </div>
+                </div>
+
+                <div class="footer-col">
+                    <h4 data-uz="Kurslar" data-ru="Курсы" data-en="Courses">Kurslar</h4>
+                    <ul>
+                        <li><a href="groups.html">Matematika</a></li>
+                        <li><a href="groups.html">Fizika</a></li>
+                        <li><a href="groups.html">Ingliz tili</a></li>
+                        <li><a href="groups.html">Kimyo</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-col">
+                    <h4 data-uz="Kompaniya" data-ru="Компания" data-en="Company">Kompaniya</h4>
+                    <ul>
+                        <li><a href="#about" data-uz="Biz haqimizda" data-ru="О нас" data-en="About us">Biz haqimizda</a></li>
+                        <li><a href="#teachers" data-uz="O'qituvchilar" data-ru="Преподаватели" data-en="Teachers">O'qituvchilar</a></li>
+                        <li><a href="videos.html" data-uz="Video darslar" data-ru="Видеоуроки" data-en="Video lessons">Video darslar</a></li>
+                        <li><a href="#contact" data-uz="Aloqa" data-ru="Контакты" data-en="Contact">Aloqa</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-col">
+                    <h4 data-uz="Aloqa" data-ru="Контакты" data-en="Contact">Aloqa</h4>
+                    <ul>
+                        <li><i class="fas fa-phone" style="color: var(--orange-500); margin-right: 8px;"></i> +998 90 123 45 67</li>
+                        <li><i class="fas fa-envelope" style="color: var(--orange-500); margin-right: 8px;"></i> info@cliffs.uz</li>
+                        <li><i class="fas fa-map-marker-alt" style="color: var(--orange-500); margin-right: 8px;"></i> Toshkent, Amir Temur 15</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div class="footer-copyright">
+                    © 2026 Cliffs Education Center. <span data-uz="Barcha huquqlar himoyalangan." data-ru="Все права защищены." data-en="All rights reserved.">Barcha huquqlar himoyalangan.</span>
+                </div>
+                <div style="display: flex; gap: 24px;">
+                    <a href="#contact" style="color: var(--text-secondary); text-decoration: none; font-size: 0.85rem;" data-uz="Maxfiylik" data-ru="Конфиденциальность" data-en="Privacy">Maxfiylik</a>
+                    <a href="#contact" style="color: var(--text-secondary); text-decoration: none; font-size: 0.85rem;" data-uz="Shartlar" data-ru="Условия" data-en="Terms">Shartlar</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- SCROLL TO TOP -->
+    <button class="scroll-top" id="scrollTop">
+        <i class="fas fa-chevron-up"></i>
+    </button>
+
+    <script>
+        const routes = {
+            home: "/",
+            login: "login.html",
+            register: "register.html",
+            dashboard: "dashboard.html",
+            groups: "groups.html",
+            group: "group.html",
+            videos: "videos.html",
+            video: "video.html",
+            profile: "profile.html",
+            admin: "/admin"
+        };
+
+        const fallbackImages = [
+            "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=900",
+            "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=900",
+            "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=900",
+            "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=900",
+            "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=900",
+            "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=900"
+        ];
+
+        const defaultCourses = ["Ingliz tili", "Rus tili", "Mobile dasturlash", "Matematika", "IELTS tayyorlov"];
+        const $ = (selector, root = document) => root.querySelector(selector);
+        const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+
+        function escapeHtml(value) {
+            return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#039;"
+            }[char]));
+        }
+
+        function text(value, fallback = "") {
+            const normalized = String(value ?? "").trim();
+            return normalized || fallback;
+        }
+
+        function formatNumber(value) {
+            return new Intl.NumberFormat("uz-UZ", { maximumFractionDigits: 0 }).format(Number(value || 0));
+        }
+
+        function formatMoney(value) {
+            const amount = Number(value || 0);
+            return amount > 0 ? `${formatNumber(amount)} so'm` : "Narx admin panelda";
+        }
+
+        function setText(selector, value) {
+            const element = typeof selector === "string" ? $(selector) : selector;
+            if (!element) return;
+            element.textContent = value;
+            element.setAttribute("data-uz", value);
+        }
+
+        function setHtml(selector, value) {
+            const element = typeof selector === "string" ? $(selector) : selector;
+            if (!element) return;
+            element.innerHTML = value;
+            element.setAttribute("data-uz", value);
+        }
+
+        function setImage(selector, src, alt) {
+            const element = typeof selector === "string" ? $(selector) : selector;
+            if (!element || !src) return;
+            element.src = src;
+            if (alt) element.alt = alt;
+        }
+
+        function imageFrom(site, key, index = 0) {
+            const gallery = Array.isArray(site?.gallery) ? site.gallery : [];
+            return text(site?.[key]) || text(gallery[index]) || fallbackImages[index % fallbackImages.length];
+        }
+
+        function profileHref(id) {
+            return id ? `${routes.profile}?id=${encodeURIComponent(id)}` : routes.profile;
+        }
+
+        function groupHref(id) {
+            return id ? `${routes.group}?id=${encodeURIComponent(id)}` : routes.groups;
+        }
+
+        function videoHref(id) {
+            return id ? `${routes.video}?id=${encodeURIComponent(id)}` : routes.videos;
+        }
+
+        function liveHref(id) {
+            return id ? `${routes.video}?live=${encodeURIComponent(id)}` : routes.videos;
+        }
+
+        function telegramHref(value) {
+            const raw = text(value);
+            if (!raw) return "";
+            if (/^https?:\/\//i.test(raw)) return raw;
+            if (/^t\.me\//i.test(raw)) return `https://${raw}`;
+            if (raw.startsWith("@")) return `https://t.me/${raw.slice(1)}`;
+            return raw;
+        }
+
+        async function getJson(url, fallback) {
+            try {
+                const response = await fetch(url, { headers: { Accept: "application/json" } });
+                if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+                return await response.json();
+            } catch (error) {
+                console.warn("Landing API fallback:", url, error);
+                return fallback;
+            }
+        }
+
+        function paintLogo(site = {}) {
+            const brand = text(site.brandName, "Cliffs");
+            $$(".nav-logo").forEach((link) => link.setAttribute("href", routes.home));
+            $$(".nav-logo-text").forEach((node) => {
+                if (brand.toLowerCase() === "cliffs") {
+                    node.innerHTML = "Cliff<span>s</span>";
+                } else {
+                    node.textContent = brand;
+                }
+            });
+            $$(".nav-logo-icon").forEach((node) => {
+                if (site.logoUrl) {
+                    node.innerHTML = `<img src="${escapeHtml(site.logoUrl)}" alt="${escapeHtml(brand)}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`;
+                } else {
+                    node.textContent = brand.charAt(0).toUpperCase() || "C";
+                }
+            });
+        }
+
+        function paintSite(landing = {}) {
+            const site = landing.site || {};
+            const highlights = landing.highlights || {};
+            const totals = highlights.totals || {};
+            const brand = text(site.brandName, "Cliffs");
+
+            document.title = `${brand} - ${text(site.brandTagline, "Premium ta'lim markazi")}`;
+            if (site.faviconUrl) {
+                let icon = $("link[rel='icon']");
+                if (!icon) {
+                    icon = document.createElement("link");
+                    icon.rel = "icon";
+                    document.head.appendChild(icon);
+                }
+                icon.href = site.faviconUrl;
+            }
+
+            paintLogo(site);
+            setHtml(".hero-title", escapeHtml(text(site.heroTitle, "Kelajagingizni Cliffs bilan quring")));
+            setText(".hero-subtitle", text(site.heroSubtitle, "Live darslar, guruhlar, video darslar va materiallar bitta platformada."));
+            setText(".hero-badge span", totals.live ? `${totals.live} ta live dars aktiv` : text(site.brandTagline, "Yangi kurslar ochiq"));
+            setImage(".hero-image", imageFrom(site, "heroImage", 0), brand);
+            setImage(".about-image img", imageFrom(site, "aboutImage", 1), `${brand} haqida`);
+
+            const counters = $$(".hero-stat-value.counter");
+            if (counters[0]) counters[0].setAttribute("data-target", Math.max(1, totals.groups || 0));
+            if (counters[1]) counters[1].setAttribute("data-target", Math.max(1, totals.teachers || 0));
+            setText($$(".hero-stat-label")[0], "Faol guruhlar");
+            setText($$(".hero-stat-label")[1], "Professional ustozlar");
+
+            const onlineValue = $(".floating-card-1 .floating-stat div div:last-child");
+            if (onlineValue) onlineValue.textContent = formatNumber(totals.live || 0);
+
+            const aboutTitle = $(".about-content h3");
+            if (aboutTitle) setText(aboutTitle, text(site.footerTitle, `${brand} - natijaga yo'naltirilgan ta'lim`));
+            const aboutText = $(".about-content p");
+            if (aboutText) setText(aboutText, text(site.footerDescription, `${brand} o'quv jarayonini guruhlar, live darslar, video kutubxona va davomat bilan bir joyga jamlaydi.`));
+
+            $$(".pricing-card .btn").forEach((link) => link.setAttribute("href", routes.register));
+            const ctaButton = $(".cta-box .btn");
+            if (ctaButton) ctaButton.setAttribute("href", routes.register);
+            const navStart = $(".nav-actions .btn-primary");
+            if (navStart) navStart.setAttribute("href", routes.register);
+            const heroPrimary = $(".hero-buttons .btn-primary");
+            if (heroPrimary) heroPrimary.setAttribute("href", "#courses");
+            const heroSecondary = $(".hero-buttons .btn-outline");
+            if (heroSecondary) heroSecondary.setAttribute("href", "#live");
+
+            const navActions = $(".nav-actions");
+            if (navActions && !$("#navLogin")) {
+                const login = document.createElement("a");
+                login.id = "navLogin";
+                login.className = "btn btn-outline";
+                login.href = routes.login;
+                login.textContent = "Kirish";
+                login.setAttribute("data-uz", "Kirish");
+                login.setAttribute("data-ru", "Войти");
+                login.setAttribute("data-en", "Login");
+                navActions.insertBefore(login, navStart || null);
+            }
+        }
+
+        function renderCourses(site = {}, highlights = {}) {
+            const track = $(".marquee-track");
+            if (!track) return;
+            const backendCourses = Array.isArray(highlights.topCourses) ? highlights.topCourses : [];
+            const adminCourses = Array.isArray(site.courses) && site.courses.length ? site.courses : defaultCourses;
+            const list = backendCourses.length
+                ? backendCourses.slice(0, 10)
+                : adminCourses.slice(0, 8).map((name, index) => ({
+                    id: "",
+                    name,
+                    subject: name,
+                    coursePrice: 0,
+                    memberCount: 0,
+                    index
+                }));
+            const repeated = list.length ? [...list, ...list] : [];
+
+            track.innerHTML = repeated.map((course, index) => {
+                const title = text(course.subject, text(course.name, "Kurs"));
+                const name = text(course.name, title);
+                const members = Number(course.memberCount || 0);
+                const image = imageFrom(site, "coursesImage", index + 2);
+                return `
+                    <a class="course-card" href="${escapeHtml(groupHref(course.id))}">
+                        <div class="course-image">
+                            <img src="${escapeHtml(image)}" alt="${escapeHtml(title)}">
+                            <span class="course-badge">${members ? `${formatNumber(members)} o'quvchi` : "Kurs"}</span>
+                        </div>
+                        <div class="course-body">
+                            <div class="course-subject">${escapeHtml(title)}</div>
+                            <div class="course-name">${escapeHtml(name)}</div>
+                            <div class="course-meta">
+                                <span><i class="fas fa-users"></i> ${members ? `${formatNumber(members)} a'zo` : "Guruhlar"}</span>
+                                <span><i class="fas fa-layer-group"></i> Platforma</span>
+                            </div>
+                            <div class="course-footer">
+                                <div class="course-price">${escapeHtml(formatMoney(course.coursePrice))}</div>
+                                <div style="color: #FBBF24;"><i class="fas fa-star"></i> 4.9</div>
+                            </div>
+                        </div>
+                    </a>
+                `;
+            }).join("");
+        }
+
+        function renderTeachers(teachers = [], highlights = {}) {
+            const track = $(".teachers-track");
+            if (!track) return;
+            const fromLanding = Array.isArray(highlights.topTeachers) ? highlights.topTeachers : [];
+            const source = teachers.length ? teachers : fromLanding;
+            const fallbackTeachers = [
+                { fullName: "Cliffs mentor", bio: "Backendga ustoz qo'shilsa shu yerda avtomatik chiqadi.", courses: ["Ingliz tili"], groupCount: 0 },
+                { fullName: "Programming mentor", bio: "Guruhlar va profillar platformaga bog'langan.", courses: ["Mobile"], groupCount: 0 },
+                { fullName: "Language coach", bio: "O'quvchi profiliga o'tish uchun karta bosiladi.", courses: ["IELTS"], groupCount: 0 }
+            ];
+            const list = (source.length ? source : fallbackTeachers).slice(0, 8);
+            const repeated = [...list, ...list];
+
+            track.innerHTML = repeated.map((teacher, index) => {
+                const courses = Array.isArray(teacher.courses) && teacher.courses.length ? teacher.courses : [];
+                const title = courses.slice(0, 2).join(" / ") || (teacher.groupCount ? `${teacher.groupCount} guruh` : "Mentor");
+                const avatar = text(teacher.avatar) || fallbackImages[(index + 1) % fallbackImages.length];
+                const stat = teacher.studentCount || teacher.followerCount || teacher.groupCount || 0;
+                return `
+                    <a class="teacher-card" href="${escapeHtml(profileHref(teacher.id))}">
+                        <div class="teacher-avatar">
+                            <img src="${escapeHtml(avatar)}" alt="${escapeHtml(text(teacher.fullName, "Ustoz"))}">
+                        </div>
+                        <div class="teacher-name">${escapeHtml(text(teacher.fullName, "Cliffs mentor"))}</div>
+                        <div class="teacher-subject">${escapeHtml(title)}</div>
+                        <div class="teacher-desc">${escapeHtml(text(teacher.bio, "Tajribali ustoz. Profil backenddagi ma'lumotlar bilan bog'langan."))}</div>
+                        <div style="display: flex; justify-content: center; gap: 20px; color: var(--text-secondary); font-size: 0.85rem;">
+                            <span><i class="fas fa-users" style="color: var(--orange-500);"></i> ${formatNumber(stat)}</span>
+                            <span><i class="fas fa-star" style="color: #FBBF24;"></i> ${teacher.isLive ? "Live" : "4.9"}</span>
+                        </div>
+                    </a>
+                `;
+            }).join("");
+        }
+
+        function renderGallery(site = {}) {
+            const grid = $(".gallery-grid");
+            if (!grid) return;
+            const gallery = Array.isArray(site.gallery) && site.gallery.length
+                ? site.gallery.slice(0, 5)
+                : fallbackImages.slice(1, 6);
+            const titles = ["Dars jarayoni", "Guruhli mashg'ulot", "Online dars", "Imtihon tayyorgarligi", "Kompyuter sinfi"];
+
+            grid.innerHTML = gallery.map((src, index) => `
+                <a class="gallery-item reveal" href="${escapeHtml(src)}" target="_blank" rel="noopener noreferrer">
+                    <img src="${escapeHtml(src)}" alt="${escapeHtml(titles[index] || "Cliffs galereya")}">
+                    <div class="gallery-overlay">
+                        <div class="gallery-title">${escapeHtml(titles[index] || "Cliffs")}</div>
+                    </div>
+                </a>
+            `).join("");
+        }
+
+        function renderMedia(site = {}, highlights = {}, videos = [], lives = []) {
+            const grid = $("#mediaGrid");
+            const notice = $("#mediaNotice");
+            if (!grid) return;
+            const activeLives = lives.length ? lives : (Array.isArray(highlights.activeLives) ? highlights.activeLives : []);
+            const featuredVideos = videos.length ? videos : (Array.isArray(highlights.featuredVideos) ? highlights.featuredVideos : []);
+            const liveCards = activeLives.slice(0, 3).map((item) => ({
+                type: "Live",
+                title: text(item.title, "Jonli efir"),
+                description: text(item.description, `${text(item.teacher?.fullName, "Ustoz")} bilan live dars.`),
+                image: text(item.thumbnail) || text(item.teacher?.avatar) || imageFrom(site, "videosImage", 3),
+                href: liveHref(item.id),
+                meta: [`${formatNumber(item.participantCount || 0)} ishtirokchi`, text(item.teacher?.fullName, "Ustoz")]
+            }));
+            const videoCards = featuredVideos.slice(0, Math.max(3, 6 - liveCards.length)).map((item) => ({
+                type: "Video",
+                title: text(item.title, "Video dars"),
+                description: text(item.description, "Video dars backenddagi kutubxonadan olindi."),
+                image: text(item.youtubeThumbnail) || imageFrom(site, "videosImage", 4),
+                href: videoHref(item.id),
+                meta: [`${formatNumber(item.likesCount || 0)} like`, text(item.teacher?.fullName, "Ustoz")]
+            }));
+            const fallback = [
+                { type: "Platforma", title: "Video kutubxona", description: "Video darslar qo'shilsa shu yerda ko'rinadi.", image: imageFrom(site, "videosImage", 4), href: routes.videos, meta: ["Videolar", "Backend"] },
+                { type: "Live", title: "Live darslar", description: "Aktiv live sessiyalar avtomatik chiqadi.", image: imageFrom(site, "heroImage", 0), href: routes.videos, meta: ["Jonli dars", "Platforma"] },
+                { type: "Guruh", title: "Guruhlar", description: "Kurs guruhlariga platforma orqali o'ting.", image: imageFrom(site, "coursesImage", 2), href: routes.groups, meta: ["Kurslar", "Cliffs"] }
+            ];
+            const cards = [...liveCards, ...videoCards];
+            const list = cards.length ? cards : fallback;
+
+            grid.innerHTML = list.map((item) => `
+                <a class="media-card reveal" href="${escapeHtml(item.href)}">
+                    <div class="media-thumb">
+                        <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}">
+                        <span class="media-badge"><i class="fas fa-circle"></i>${escapeHtml(item.type)}</span>
+                    </div>
+                    <div class="media-body">
+                        <h3>${escapeHtml(item.title)}</h3>
+                        <p>${escapeHtml(item.description)}</p>
+                        <div class="media-meta">
+                            ${(item.meta || []).slice(0, 2).map((meta) => `<span><i class="fas fa-check-circle"></i>${escapeHtml(meta)}</span>`).join("")}
+                        </div>
+                    </div>
+                </a>
+            `).join("");
+            if (notice) notice.textContent = cards.length ? "" : "Backendda live yoki video qo'shilganda bu blok avtomatik yangilanadi.";
+        }
+
+        function renderFooter(site = {}, highlights = {}) {
+            const footerBrand = $(".footer-brand p");
+            if (footerBrand) setText(footerBrand, text(site.footerDescription, "Sifatli ta'lim va zamonaviy o'quv jarayoni."));
+
+            const courseCol = $$(".footer-col")[0];
+            const courses = Array.isArray(site.courses) && site.courses.length ? site.courses : defaultCourses;
+            if (courseCol) {
+                const list = $("ul", courseCol);
+                if (list) {
+                    list.innerHTML = courses.slice(0, 5).map((course) => `<li><a href="${routes.groups}">${escapeHtml(course)}</a></li>`).join("");
+                }
+            }
+
+            const companyCol = $$(".footer-col")[1];
+            if (companyCol) {
+                const list = $("ul", companyCol);
+                if (list) {
+                    list.innerHTML = `
+                        <li><a href="#about">Biz haqimizda</a></li>
+                        <li><a href="#teachers">O'qituvchilar</a></li>
+                        <li><a href="${routes.videos}">Video darslar</a></li>
+                        <li><a href="${routes.login}">Kirish</a></li>
+                        <li><a href="${routes.register}">Ro'yxatdan o'tish</a></li>
+                        <li><a href="${routes.admin}">Admin panel</a></li>
+                    `;
+                }
+            }
+
+            const contactCol = $$(".footer-col")[2];
+            if (contactCol) {
+                const phone = text(site.phone, "+998 90 123 45 67");
+                const email = text(site.email, "info@cliffs.uz");
+                const address = text(site.address, "Toshkent");
+                const list = $("ul", contactCol);
+                if (list) {
+                    list.innerHTML = `
+                        <li><i class="fas fa-phone" style="color: var(--orange-500); margin-right: 8px;"></i><a href="tel:${escapeHtml(phone.replace(/[^\d+]/g, ""))}">${escapeHtml(phone)}</a></li>
+                        <li><i class="fas fa-envelope" style="color: var(--orange-500); margin-right: 8px;"></i><a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></li>
+                        <li><i class="fas fa-map-marker-alt" style="color: var(--orange-500); margin-right: 8px;"></i>${escapeHtml(address)}</li>
+                    `;
+                }
+            }
+
+            const telegram = telegramHref(site.telegram);
+            const socialLinks = $$(".footer-social a");
+            if (socialLinks[0]) socialLinks[0].href = telegram || "#contact";
+            if (socialLinks[1]) socialLinks[1].href = "#gallery";
+            if (socialLinks[2]) socialLinks[2].href = routes.videos;
+            if (socialLinks[3]) socialLinks[3].href = "#contact";
+            if (telegram && socialLinks[0]) {
+                socialLinks[0].target = "_blank";
+                socialLinks[0].rel = "noopener noreferrer";
+            }
+
+            const copyright = $(".footer-copyright");
+            if (copyright) {
+                copyright.textContent = text(site.footerCopyright, `(c) 2026 ${text(site.brandName, "Cliffs")}. Barcha huquqlar himoyalangan.`);
+            }
+        }
+
+        function setupInteractions() {
+            const preloader = $("#preloader");
+            window.addEventListener("load", () => {
+                setTimeout(() => preloader?.classList.add("hidden"), 700);
+            });
+            setTimeout(() => preloader?.classList.add("hidden"), 2200);
+
+            const bgSlides = $$(".hero-bg-slide");
+            let currentBg = 0;
+            if (bgSlides.length) {
+                setInterval(() => {
+                    bgSlides[currentBg]?.classList.remove("active");
+                    currentBg = (currentBg + 1) % bgSlides.length;
+                    bgSlides[currentBg]?.classList.add("active");
+                }, 6000);
+            }
+
+            const navbar = $("#navbar");
+            window.addEventListener("scroll", () => {
+                navbar?.classList.toggle("scrolled", window.scrollY > 50);
+            });
+
+            const navToggle = $("#navToggle");
+            const navCenter = $(".nav-center");
+            navToggle?.addEventListener("click", () => navCenter?.classList.toggle("open"));
+            $$(".nav-links a").forEach((link) => {
+                link.addEventListener("click", () => navCenter?.classList.remove("open"));
+            });
+
+            const themeToggle = $("#themeToggle");
+            const html = document.documentElement;
+            const themeIcon = themeToggle?.querySelector("i");
+            themeToggle?.addEventListener("click", () => {
+                const dark = html.getAttribute("data-theme") === "dark";
+                html.setAttribute("data-theme", dark ? "light" : "dark");
+                themeIcon?.classList.toggle("fa-moon", dark);
+                themeIcon?.classList.toggle("fa-sun", !dark);
+            });
+
+            const langSelect = $("#langSelect");
+            langSelect?.addEventListener("change", (event) => {
+                const lang = event.target.value;
+                $$("[data-uz]").forEach((element) => {
+                    const value = element.getAttribute(`data-${lang}`);
+                    if (value) element.innerHTML = value;
+                });
+            });
+
+            const scrollTopBtn = $("#scrollTop");
+            window.addEventListener("scroll", () => {
+                scrollTopBtn?.classList.toggle("visible", window.scrollY > 500);
+            });
+            scrollTopBtn?.addEventListener("click", () => {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            });
+
+            document.addEventListener("click", (event) => {
+                const anchor = event.target.closest("a[href^='#']");
+                if (!anchor) return;
+                const href = anchor.getAttribute("href");
+                if (!href || href.length < 2) return;
+                const target = document.querySelector(href);
+                if (!target) return;
+                event.preventDefault();
+                target.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+        }
+
+        function revealOnScroll() {
+            $$(".reveal").forEach((element) => {
+                const elementTop = element.getBoundingClientRect().top;
+                if (elementTop < window.innerHeight - 80) {
+                    element.classList.add("active");
+                }
+            });
+        }
+
+        function animateCounters() {
+            $$(".counter").forEach((counter) => {
+                const target = parseInt(counter.getAttribute("data-target"), 10);
+                if (!target || counter.classList.contains("counted")) return;
+                if (counter.getBoundingClientRect().top > window.innerHeight) return;
+
+                counter.classList.add("counted");
+                let current = 0;
+                const increment = Math.max(1, target / 60);
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        counter.textContent = `${formatNumber(target)}+`;
+                        clearInterval(timer);
+                    } else {
+                        counter.textContent = formatNumber(Math.floor(current));
+                    }
+                }, 30);
+            });
+        }
+
+        async function bootLanding() {
+            setupInteractions();
+            window.addEventListener("scroll", revealOnScroll);
+            window.addEventListener("scroll", animateCounters);
+            window.addEventListener("load", () => {
+                revealOnScroll();
+                setTimeout(animateCounters, 500);
+            });
+
+            const [landing, teachersData, videosData, liveData] = await Promise.all([
+                getJson("/api/public/landing", { site: {}, highlights: {} }),
+                getJson("/api/public/teachers", { teachers: [] }),
+                getJson("/api/public/videos?sort=trending&limit=8", { videos: [] }),
+                getJson("/api/public/live/active", { sessions: [] })
+            ]);
+
+            const site = landing.site || {};
+            const highlights = landing.highlights || {};
+            paintSite(landing);
+            renderCourses(site, highlights);
+            renderTeachers(teachersData.teachers || [], highlights);
+            renderGallery(site);
+            renderMedia(site, highlights, videosData.videos || [], liveData.sessions || []);
+            renderFooter(site, highlights);
+            revealOnScroll();
+            setTimeout(animateCounters, 300);
+        }
+
+        bootLanding();
+    </script>
+</body>
+</html>

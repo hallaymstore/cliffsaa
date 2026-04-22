@@ -35,6 +35,7 @@ const STATIC_FILES = new Map([
   ['groups.html', 'text/html; charset=utf-8'],
   ['index.html', 'text/html; charset=utf-8'],
   ['index2.html', 'text/html; charset=utf-8'],
+  ['index211.html', 'text/html; charset=utf-8'],
   ['login.html', 'text/html; charset=utf-8'],
   ['material.html', 'text/html; charset=utf-8'],
   ['materials.html', 'text/html; charset=utf-8'],
@@ -3966,10 +3967,10 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://' + (req.headers.host || 'localhost'));
     const learnhubIndex = path.join(PUBLIC, 'learnhub-1.0.0', 'dist', 'index.html');
     if (req.method === 'GET' && url.pathname === '/') {
-      return text(res, 200, fs.readFileSync(path.join(PUBLIC, 'index2.html'), 'utf8'), 'text/html; charset=utf-8');
+      return text(res, 200, fs.readFileSync(path.join(PUBLIC, 'index211.html'), 'utf8'), 'text/html; charset=utf-8');
     }
     if (req.method === 'GET' && url.pathname === '/index.html') {
-      return text(res, 200, fs.readFileSync(path.join(PUBLIC, 'index2.html'), 'utf8'), 'text/html; charset=utf-8');
+      return text(res, 200, fs.readFileSync(path.join(PUBLIC, 'index211.html'), 'utf8'), 'text/html; charset=utf-8');
     }
     if (req.method === 'GET' && url.pathname === '/learnhub') {
       if (!fs.existsSync(learnhubIndex)) return json(res, 404, { error: 'LearnHub build topilmadi' });
