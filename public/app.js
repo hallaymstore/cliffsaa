@@ -8009,10 +8009,22 @@ let pipElement = null;
 // Video call boshlash (Teacher/Student mode)
 async function startGroupCall(roomId, isTeacher = false) {
     try {
-        // Kamera va mikrofonni so'rash
+        // Kamera va mikrofonni so'rash - xatoliklarni to'g'ri qayta ishlash
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error("Brauzeringiz video qo'llab-quvvatlamaydi");
+        }
+
         localStream = await navigator.mediaDevices.getUserMedia({
-            video: { width: 1280, height: 720 },
-            audio: true
+            video: { 
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                facingMode: "user"
+            },
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            }
         });
 
         // UI ni yangilash
@@ -8021,7 +8033,11 @@ async function startGroupCall(roomId, isTeacher = false) {
         // O'z videosini ko'rsatish
         if (isTeacher) {
             const mainVideo = document.getElementById('teacher-main-video');
-            if (mainVideo) mainVideo.srcObject = localStream;
+            if (mainVideo) {
+                mainVideo.srcObject = localStream;
+                mainVideo.muted = true;
+                mainVideo.playsInline = true;
+            }
         } else {
             addVideoTile('me', localStream, 'Siz', true);
         }
@@ -8032,7 +8048,15 @@ async function startGroupCall(roomId, isTeacher = false) {
         toast("Video aloqa boshlandi", "success");
     } catch (error) {
         console.error("Video call xatosi:", error);
-        toast("Kameraga ruxsat berilmadi", "error");
+        let errorMsg = "Kameraga ruxsat berilmadi";
+        if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+            errorMsg = "Kamera topilmadi";
+        } else if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+            errorMsg = "Kameraga ruxsat rad etildi";
+        } else if (error.name === 'OverconstrainedError') {
+            errorMsg = "Kamera parametrlari noto'g'ri";
+        }
+        toast(errorMsg, "error");
     }
 }
 
@@ -8115,8 +8139,11 @@ async function toggleScreenShare() {
 
     try {
         screenShareTrack = await navigator.mediaDevices.getDisplayMedia({
-            video: { cursor: "always" },
-            audio: false
+            video: { 
+                cursor: "always",
+                displaySurface: "monitor"
+            },
+            audio: true // Tizim ovozi ham uzatiladi
         });
 
         const videoTrack = screenShareTrack.getVideoTracks()[0];
@@ -8127,6 +8154,11 @@ async function toggleScreenShare() {
             mainVideo.srcObject = screenShareTrack;
         }
 
+        // Kamerani o'chirib, PiP ga o'tkazish
+        if (localStream && localStream.getVideoTracks()[0]) {
+            localStream.getVideoTracks()[0].enabled = false;
+        }
+        
         // Kamerani PiP ga o'tkazish
         showPiPCamera();
 
@@ -8141,7 +8173,9 @@ async function toggleScreenShare() {
 
     } catch (error) {
         console.error("Screen share xatosi:", error);
-        toast("Ekran ulashni boshlab bo'lmadi", "error");
+        if (error.name !== 'NotAllowedError') {
+            toast("Ekran ulashni boshlab bo'lmadi", "error");
+        }
     }
 }
 
@@ -8172,18 +8206,24 @@ function stopScreenShare() {
     toast("Ekran ulash to'xtatildi", "info");
 }
 
-// PiP Camera ko'rsatish (Screen Share paytida)
+// PiP Camera ko'rsatish (Screen Share paytida) - Yuqori o'ng burchakda
 function showPiPCamera() {
     if (pipElement) return;
 
     pipElement = document.createElement('div');
     pipElement.className = 'pip-camera-container';
-    pipElement.innerHTML = '<video autoplay playsinline muted></video>';
+    pipElement.innerHTML = `
+        <video autoplay playsinline muted></video>
+        <div class="pip-close-btn" onclick="hidePiPCamera()">×</div>
+    `;
     
     const video = pipElement.querySelector('video');
     video.srcObject = localStream;
 
-    document.querySelector('.video-call-container').appendChild(pipElement);
+    const container = document.querySelector('.video-call-container');
+    if (container) {
+        container.appendChild(pipElement);
+    }
 
     // Draggable qilish
     makeDraggable(pipElement);
