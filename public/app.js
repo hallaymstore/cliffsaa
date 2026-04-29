@@ -2686,6 +2686,7 @@
                     <button class="button secondary" id="live-leave-btn">${icons.close}<span>Chiqish</span></button>
                     <button class="button secondary" id="live-audio-btn">${audioEnabled ? icons.mic : icons.micOff}<span>Mic</span></button>
                     <button class="button secondary" id="live-video-btn">${videoEnabled ? icons.video : icons.videoOff}<span>Video</span></button>
+                    <button class="button secondary" id="live-screen-btn">${icons.screenShare}<span>Ekran</span></button>
                     <button class="button ${currentSession.isLiked ? "secondary" : "primary"}" id="live-like-btn">${icons.like}<span>${currentSession.isLiked ? "Like bosilgan" : "Like bosish"}</span></button>
                     ${
                       state.me?.id === currentSession.teacher?.id || isRole(state.me, "admin")
