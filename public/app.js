@@ -7995,3 +7995,282 @@
   window.addEventListener("beforeunload", clearPolling);
   init();
 })();
+
+// ==========================================
+// ADVANCED GROUP VIDEO CALL LOGIC
+// ==========================================
+
+let localStream = null;
+let peerConnections = {};
+let isScreenSharing = false;
+let screenShareTrack = null;
+let pipElement = null;
+
+// Video call boshlash (Teacher/Student mode)
+async function startGroupCall(roomId, isTeacher = false) {
+    try {
+        // Kamera va mikrofonni so'rash
+        localStream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 1280, height: 720 },
+            audio: true
+        });
+
+        // UI ni yangilash
+        renderVideoCallUI(isTeacher);
+
+        // O'z videosini ko'rsatish
+        if (isTeacher) {
+            const mainVideo = document.getElementById('teacher-main-video');
+            if (mainVideo) mainVideo.srcObject = localStream;
+        } else {
+            addVideoTile('me', localStream, 'Siz', true);
+        }
+
+        // Signaling serverga ulanish (simulyatsiya)
+        connectToSignalingServer(roomId);
+
+        toast("Video aloqa boshlandi", "success");
+    } catch (error) {
+        console.error("Video call xatosi:", error);
+        toast("Kameraga ruxsat berilmadi", "error");
+    }
+}
+
+// UI Render qilish (Teacher vs Student layout)
+function renderVideoCallUI(isTeacher) {
+    const container = document.getElementById('video-call-layer');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="video-call-container">
+            ${isTeacher ? `
+                <div class="teacher-mode-layout">
+                    <div class="teacher-main-stage">
+                        <video id="teacher-main-video" autoplay playsinline muted></video>
+                        <div class="user-label">O'qituvchi</div>
+                    </div>
+                    <div class="students-grid-panel" id="students-grid">
+                        <!-- Talabalar shu yerga qo'shiladi -->
+                    </div>
+                </div>
+            ` : `
+                <div class="students-grid-panel" id="students-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); grid-auto-rows: 150px;">
+                    <!-- Barcha ishtirokchilar -->
+                </div>
+            `}
+            
+            <div class="call-controls">
+                <button class="control-btn" onclick="toggleMute()" title="Mikrofon">
+                    <span id="mic-icon">🎤</span>
+                </button>
+                <button class="control-btn" onclick="toggleCamera()" title="Kamera">
+                    <span id="cam-icon">📷</span>
+                </button>
+                ${isTeacher ? `
+                    <button class="control-btn screen-share" onclick="toggleScreenShare()" title="Ekran ulash">
+                        <span>🖥️</span>
+                    </button>
+                ` : ''}
+                <button class="control-btn" onclick="toggleChat()" title="Chat">
+                    <span>💬</span>
+                </button>
+                <button class="control-btn active" onclick="endCall()" title="Tugatish" style="background: #ef4444;">
+                    <span>📞</span>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// Talaba videosini qo'shish (Gridga)
+function addVideoTile(userId, stream, userName, isLocal = false) {
+    const grid = document.getElementById('students-grid');
+    if (!grid) return;
+
+    const tile = document.createElement('div');
+    tile.className = 'video-tile';
+    tile.id = `tile-${userId}`;
+    
+    const video = document.createElement('video');
+    video.srcObject = stream;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.muted = isLocal; // O'z ovozingni o'chirish
+    
+    const label = document.createElement('div');
+    label.className = 'user-label';
+    label.textContent = userName;
+
+    tile.appendChild(video);
+    tile.appendChild(label);
+    grid.appendChild(tile);
+}
+
+// Screen Share funksiyasi (Faqat o'qituvchi uchun)
+async function toggleScreenShare() {
+    if (isScreenSharing) {
+        stopScreenShare();
+        return;
+    }
+
+    try {
+        screenShareTrack = await navigator.mediaDevices.getDisplayMedia({
+            video: { cursor: "always" },
+            audio: false
+        });
+
+        const videoTrack = screenShareTrack.getVideoTracks()[0];
+        
+        // Asosiy ekranga screen share qo'yish
+        const mainVideo = document.getElementById('teacher-main-video');
+        if (mainVideo) {
+            mainVideo.srcObject = screenShareTrack;
+        }
+
+        // Kamerani PiP ga o'tkazish
+        showPiPCamera();
+
+        // Boshqalarga yuborish (WebRTC signaling orqali)
+        sendScreenShareToPeers(videoTrack);
+
+        isScreenSharing = true;
+        toast("Ekran ulashdi", "info");
+
+        // Track tugaganda (foydalanuvchi to'xtatsa)
+        videoTrack.onended = () => stopScreenShare();
+
+    } catch (error) {
+        console.error("Screen share xatosi:", error);
+        toast("Ekran ulashni boshlab bo'lmadi", "error");
+    }
+}
+
+function stopScreenShare() {
+    if (!isScreenSharing || !localStream) return;
+
+    // Screen share trackni to'xtatish
+    if (screenShareTrack) {
+        screenShareTrack.getTracks().forEach(track => track.stop());
+        screenShareTrack = null;
+    }
+
+    // Asosiy ekranga kamerani qaytarish
+    const mainVideo = document.getElementById('teacher-main-video');
+    if (mainVideo) {
+        mainVideo.srcObject = localStream;
+    }
+
+    // PiP ni yopish
+    hidePiPCamera();
+
+    // Kamerani qayta yoqish
+    if (localStream.getVideoTracks()[0]) {
+        localStream.getVideoTracks()[0].enabled = true;
+    }
+
+    isScreenSharing = false;
+    toast("Ekran ulash to'xtatildi", "info");
+}
+
+// PiP Camera ko'rsatish (Screen Share paytida)
+function showPiPCamera() {
+    if (pipElement) return;
+
+    pipElement = document.createElement('div');
+    pipElement.className = 'pip-camera-container';
+    pipElement.innerHTML = '<video autoplay playsinline muted></video>';
+    
+    const video = pipElement.querySelector('video');
+    video.srcObject = localStream;
+
+    document.querySelector('.video-call-container').appendChild(pipElement);
+
+    // Draggable qilish
+    makeDraggable(pipElement);
+}
+
+function hidePiPCamera() {
+    if (pipElement) {
+        pipElement.remove();
+        pipElement = null;
+    }
+}
+
+// Elementni sichqoncha bilan surish (Draggable)
+function makeDraggable(element) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    element.onmousedown = dragMouseDown;
+
+    function dragMouseDown(e) {
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        element.style.top = (element.offsetTop - pos2) + "px";
+        element.style.left = (element.offsetLeft - pos1) + "px";
+    }
+
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
+}
+
+// Foydalanuvchi funksiyalari
+function toggleMute() {
+    if (localStream) {
+        const audioTrack = localStream.getAudioTracks()[0];
+        if (audioTrack) {
+            audioTrack.enabled = !audioTrack.enabled;
+            document.getElementById('mic-icon').textContent = audioTrack.enabled ? '🎤' : '🔇';
+        }
+    }
+}
+
+function toggleCamera() {
+    if (localStream) {
+        const videoTrack = localStream.getVideoTracks()[0];
+        if (videoTrack) {
+            videoTrack.enabled = !videoTrack.enabled;
+            document.getElementById('cam-icon').textContent = videoTrack.enabled ? '📷' : '🚫';
+        }
+    }
+}
+
+function endCall() {
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+    }
+    if (screenShareTrack) {
+        screenShareTrack.getTracks().forEach(track => track.stop());
+    }
+    document.getElementById('video-call-layer').innerHTML = '';
+    toast("Aloqa tugatildi", "info");
+}
+
+// Simulyatsiya: Signaling serverga ulanish
+function connectToSignalingServer(roomId) {
+    console.log("Connecting to room:", roomId);
+    // Bu yerda haqiqiy WebRTC signaling kod bo'ladi
+}
+
+function sendScreenShareToPeers(track) {
+    console.log("Sending screen share to peers...");
+    // Bu yerda WebRTC orqali boshqalarga yuborish kodi bo'ladi
+}
+
+// Global funksiya sifatida export qilish
+window.startGroupCall = startGroupCall;
+window.toggleScreenShare = toggleScreenShare;
+window.endCall = endCall;
+window.toggleMute = toggleMute;
+window.toggleCamera = toggleCamera;
