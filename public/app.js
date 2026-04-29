@@ -2628,6 +2628,7 @@
 
     let joined = false;
     let localStream = null;
+    let screenStream = null;
     let audioEnabled = true;
     let videoEnabled = true;
     let pollBusy = false;
@@ -2944,9 +2945,88 @@
       return localStream;
     }
 
+    async function toggleScreenShare() {
+      try {
+        if (screenStream) {
+          // Stop screen share
+          for (const track of screenStream.getTracks()) track.stop();
+          screenStream = null;
+          
+          // Remove screen share tile
+          const screenTile = document.querySelector('.live-tile.screen-share-main');
+          if (screenTile) screenTile.remove();
+          
+          // Restore teacher video to main position
+          const grid = document.getElementById('live-grid');
+          if (grid) {
+            grid.classList.remove('teacher-stage');
+            document.body.classList.remove('screen-share-active');
+          }
+          
+          // Re-enable camera if it was disabled
+          if (localStream && !videoEnabled) {
+            videoEnabled = true;
+            for (const track of localStream.getVideoTracks()) track.enabled = true;
+          }
+          
+          toast("Ekran ulashi to'xtatildi", "success");
+        } else {
+          // Start screen share
+          screenStream = await navigator.mediaDevices.getDisplayMedia({ 
+            video: { cursor: "always" }, 
+            audio: false 
+          });
+          
+          // Add screen share track to all peers
+          for (const [userId, entry] of peerMap.entries()) {
+            const sender = entry.pc.addTrack(screenStream.getVideoTracks()[0], screenStream);
+          }
+          
+          // Create screen share tile
+          const grid = document.getElementById('live-grid');
+          if (grid) {
+            grid.classList.add('teacher-stage');
+            document.body.classList.add('screen-share-active');
+            
+            const screenTile = document.createElement('article');
+            screenTile.className = 'live-tile screen-share-main';
+            screenTile.innerHTML = `
+              <video autoplay playsinline></video>
+              <span class="live-tag">Ekran ulashi</span>
+            `;
+            grid.insertBefore(screenTile, grid.firstChild);
+            
+            const videoEl = screenTile.querySelector('video');
+            if (videoEl) videoEl.srcObject = screenStream;
+          }
+          
+          // Switch camera to PiP mode
+          if (localStream) {
+            videoEnabled = true;
+            const teacherTile = document.querySelector('.live-tile.teacher-main, .live-tile.local');
+            if (teacherTile) {
+              teacherTile.classList.add('teacher-pip');
+            }
+          }
+          
+          // Listen for user stopping screen share via browser UI
+          screenStream.getVideoTracks()[0].addEventListener('ended', () => {
+            toggleScreenShare();
+          });
+          
+          toast("Ekran ulash boshlandi", "success");
+        }
+        updateControlStates();
+      } catch (error) {
+        toast(error.message, "error");
+      }
+    }
+
     function stopLocalMedia() {
       for (const track of localStream?.getTracks?.() || []) track.stop();
+      for (const track of screenStream?.getTracks?.() || []) track.stop();
       localStream = null;
+      screenStream = null;
       if (state.me?.id) removeTile(state.me.id);
       updateControlStates();
       syncEmptyState();
