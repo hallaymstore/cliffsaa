@@ -75,6 +75,7 @@
     comment: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 5h16v10H8l-4 4z"></path></svg>',
     mic: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 16a4 4 0 0 0 4-4V7a4 4 0 1 0-8 0v5a4 4 0 0 0 4 4Z"></path><path d="M19 11a7 7 0 0 1-14 0"></path><path d="M12 18v3"></path></svg>',
     micOff: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 16a4 4 0 0 0 4-4V9"></path><path d="M8 8v4a4 4 0 0 0 6.8 2.8"></path><path d="M19 11a7 7 0 0 1-11.2 5.6"></path><path d="M12 18v3"></path><path d="M4 4 20 20"></path></svg>',
+    screenShare: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="4" width="18" height="13" rx="3"></rect><path d="M8 21h8"></path><path d="M12 17v4"></path><path d="m9 10 3-3 3 3"></path><path d="M12 7v7"></path></svg>',
     edit: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"></path></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="m19 6-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>',
@@ -6585,6 +6586,11 @@
     let callBusy = false;
     let callPollingBusy = false;
     let callOpen = false;
+    let screenSharingUserId = "";
+    let screenStream = null;
+    let compositeStream = null;
+    let compositeFrame = 0;
+    let screenSignalBusy = false;
     const peerMap = new Map();
     const remoteStreams = new Map();
     const queuedCandidates = new Map();
@@ -6694,6 +6700,7 @@
             <div class="call-footer">
               <button class="button secondary icon-only" id="toggle-audio" aria-label="Mikrofon" title="Mikrofon">${icons.mic}<span>Mic</span></button>
               <button class="button secondary icon-only" id="toggle-video" aria-label="Kamera" title="Kamera">${icons.video}<span>Video</span></button>
+              ${chat.type === "group" && chat.teacherId === state.me.id ? `<button class="button secondary icon-only" id="toggle-screen" aria-label="Ekran ulash" title="Ekran ulash">${icons.screenShare || icons.video}<span>Ekran</span></button>` : ""}
               <button class="button danger icon-only" id="leave-call-button" aria-label="Videochatni yopish" title="Videochatni yopish">${icons.close}<span>Leave</span></button>
             </div>
           </div>
@@ -6715,6 +6722,7 @@
     const callButton = document.getElementById("open-call-button");
     const audioButton = document.getElementById("toggle-audio");
     const videoButton = document.getElementById("toggle-video");
+    const screenButton = document.getElementById("toggle-screen");
     const leaveButtons = [document.getElementById("leave-call-button"), document.getElementById("leave-call-top")];
     const groupMenuLayer = document.getElementById("group-menu-layer");
     const groupMenuButton = document.getElementById("open-group-menu");
@@ -7364,6 +7372,10 @@
       videoButton.innerHTML = `${videoEnabled ? icons.video : icons.videoOff}<span>Video</span>`;
       audioButton.classList.toggle("muted", !audioEnabled);
       videoButton.classList.toggle("muted", !videoEnabled);
+      if (screenButton) {
+        screenButton.classList.toggle("active", screenSharingUserId === state.me?.id);
+        screenButton.innerHTML = `${icons.screenShare}<span>${screenSharingUserId === state.me?.id ? "Stop" : "Ekran"}</span>`;
+      }
     }
 
     function tileMarkup(user, isLocal = false) {
@@ -7382,6 +7394,7 @@
         tile = callGrid.querySelector(`[data-user-id="${CSS.escape(user.id)}"]`);
       }
       tile.classList.toggle("local", isLocal);
+      tile.classList.toggle("screen-main", screenSharingUserId === user.id);
       tile.querySelector(".call-tag").textContent = isLocal ? "Siz" : user.fullName || user.username || "User";
       return tile.querySelector("video");
     }
@@ -7408,7 +7421,7 @@
       const allowedIds = new Set();
       if (localStream && state.me) {
         allowedIds.add(state.me.id);
-        applyStream(ensureVideoTile(state.me, true), localStream);
+        applyStream(ensureVideoTile(state.me, true), compositeStream || localStream);
       } else if (state.me) {
         removeVideoTile(state.me.id);
       }
@@ -7419,10 +7432,119 @@
         const video = ensureVideoTile(participant, false);
         if (stream) applyStream(video, stream);
       }
+      callGrid.classList.toggle("screen-share-mode", !!screenSharingUserId);
       callGrid.querySelectorAll("[data-user-id]").forEach((node) => {
         if (!allowedIds.has(node.dataset.userId)) node.remove();
+        else node.classList.toggle("screen-main", screenSharingUserId === node.dataset.userId);
       });
       syncCallEmptyState();
+    }
+
+    function currentVideoTrack() {
+      return compositeStream?.getVideoTracks?.()[0] || localStream?.getVideoTracks?.()[0] || null;
+    }
+
+    function addLocalTracksToPeer(pc) {
+      for (const track of localStream?.getAudioTracks?.() || []) {
+        pc.addTrack(track, localStream);
+      }
+      const videoTrack = currentVideoTrack();
+      if (videoTrack) {
+        pc.addTrack(videoTrack, compositeStream || localStream);
+      }
+    }
+
+    async function replaceOutgoingVideoTrack(track = currentVideoTrack()) {
+      await Promise.all(
+        [...peerMap.values()].map(async (entry) => {
+          const sender = entry.pc.getSenders().find((item) => item.track?.kind === "video");
+          if (sender) await sender.replaceTrack(track);
+          else if (track) entry.pc.addTrack(track, compositeStream || localStream);
+        })
+      );
+    }
+
+    function broadcastScreenShare(active) {
+      if (!currentCall || screenSignalBusy) return;
+      screenSignalBusy = true;
+      const targets = (currentCall.participants || []).filter((participant) => participant?.id && participant.id !== state.me.id);
+      Promise.all(targets.map((participant) => sendSignal(currentCall.id, participant.id, "screen-share", { active }))).finally(() => {
+        screenSignalBusy = false;
+      });
+    }
+
+    function stopScreenShareTracks() {
+      if (compositeFrame) {
+        cancelAnimationFrame(compositeFrame);
+        compositeFrame = 0;
+      }
+      for (const track of compositeStream?.getTracks?.() || []) track.stop();
+      for (const track of screenStream?.getTracks?.() || []) track.stop();
+      compositeStream = null;
+      screenStream = null;
+    }
+
+    async function stopScreenShare(announce = true) {
+      if (screenSharingUserId !== state.me?.id && !screenStream && !compositeStream) return;
+      stopScreenShareTracks();
+      screenSharingUserId = "";
+      await replaceOutgoingVideoTrack(localStream?.getVideoTracks?.()[0] || null);
+      if (announce) broadcastScreenShare(false);
+      updateCallControls();
+      renderCallTiles();
+    }
+
+    async function startScreenShare() {
+      if (chat.type !== "group" || chat.teacherId !== state.me.id) return;
+      await ensureLocalMedia();
+      if (!navigator.mediaDevices?.getDisplayMedia) throw new Error("Brauzer ekran ulashni qo'llamaydi");
+      stopScreenShareTracks();
+      screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { cursor: "always" }, audio: false });
+      const screenVideo = document.createElement("video");
+      const cameraVideo = document.createElement("video");
+      screenVideo.srcObject = screenStream;
+      cameraVideo.srcObject = localStream;
+      screenVideo.muted = true;
+      cameraVideo.muted = true;
+      screenVideo.playsInline = true;
+      cameraVideo.playsInline = true;
+      await Promise.all([screenVideo.play().catch(() => {}), cameraVideo.play().catch(() => {})]);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = 1280;
+      canvas.height = 720;
+      const ctx = canvas.getContext("2d");
+      const draw = () => {
+        const sw = screenVideo.videoWidth || 1280;
+        const sh = screenVideo.videoHeight || 720;
+        if (canvas.width !== sw) canvas.width = sw;
+        if (canvas.height !== sh) canvas.height = sh;
+        if (screenVideo.readyState >= 2) ctx.drawImage(screenVideo, 0, 0, sw, sh);
+        else {
+          ctx.fillStyle = "#050708";
+          ctx.fillRect(0, 0, sw, sh);
+        }
+        const pipW = Math.max(180, Math.round(sw * 0.22));
+        const pipH = Math.round(pipW * 9 / 16);
+        const margin = Math.max(16, Math.round(sw * 0.018));
+        const x = sw - pipW - margin;
+        const y = margin;
+        ctx.fillStyle = "rgba(0, 0, 0, 0.42)";
+        ctx.fillRect(x - 4, y - 4, pipW + 8, pipH + 8);
+        if (cameraVideo.readyState >= 2) ctx.drawImage(cameraVideo, x, y, pipW, pipH);
+        compositeFrame = requestAnimationFrame(draw);
+      };
+      draw();
+      compositeStream = canvas.captureStream(30);
+      const compositeTrack = compositeStream.getVideoTracks()[0];
+      screenSharingUserId = state.me.id;
+      screenStream.getVideoTracks()[0].addEventListener("ended", () => {
+        stopScreenShare(true).catch(() => {});
+      });
+      await replaceOutgoingVideoTrack(compositeTrack);
+      broadcastScreenShare(true);
+      updateCallControls();
+      renderCallTiles();
     }
 
     async function getCallConfig() {
@@ -7467,9 +7589,7 @@
       const entry = { pc, participant, initiated: false };
       peerMap.set(participant.id, entry);
 
-      for (const track of localStream?.getTracks() || []) {
-        pc.addTrack(track, localStream);
-      }
+      addLocalTracksToPeer(pc);
 
       pc.ontrack = (event) => {
         for (const track of event.streams[0]?.getTracks?.() || []) {
@@ -7503,6 +7623,9 @@
         await pc.setLocalDescription(offer);
         await sendSignal(currentCall.id, participant.id, "offer", pc.localDescription);
       }
+      if (screenSharingUserId === state.me.id && currentCall) {
+        sendSignal(currentCall.id, participant.id, "screen-share", { active: true }).catch(() => {});
+      }
 
       return entry;
     }
@@ -7514,6 +7637,12 @@
         fullName: "User",
         username: "",
       };
+      if (signal.type === "screen-share") {
+        screenSharingUserId = signal.data?.active ? signal.fromUserId : "";
+        updateCallControls();
+        renderCallTiles();
+        return;
+      }
       if (signal.type === "candidate") {
         const entry = peerMap.get(signal.fromUserId);
         if (!entry || !entry.pc.remoteDescription) {
@@ -7583,6 +7712,8 @@
     }
 
     function stopLocalMedia() {
+      stopScreenShareTracks();
+      screenSharingUserId = "";
       for (const track of localStream?.getTracks() || []) {
         track.stop();
       }
@@ -7779,6 +7910,15 @@
         track.enabled = videoEnabled;
       }
       updateCallControls();
+    });
+
+    screenButton?.addEventListener("click", async () => {
+      try {
+        if (screenSharingUserId === state.me.id) await stopScreenShare(true);
+        else await startScreenShare();
+      } catch (error) {
+        if (error.name !== "NotAllowedError") toast(error.message || "Ekran ulashni boshlab bo'lmadi", "error");
+      }
     });
 
     leaveButtons.forEach((button) => {

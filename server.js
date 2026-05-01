@@ -3408,7 +3408,7 @@ async function api(req, res, url) {
     const b = await body(req);
     const toUserId = b.toUserId ? oid(b.toUserId) : null;
     const type = clean(b.type, 20);
-    if (!['offer', 'answer', 'candidate'].includes(type)) throw err('Signal turi noto‘g‘ri');
+    if (!['offer', 'answer', 'candidate', 'screen-share'].includes(type)) throw err('Signal turi noto‘g‘ri');
     await liveSignals.insertOne({
       sessionId,
       fromUserId: me._id,
@@ -3845,7 +3845,7 @@ async function api(req, res, url) {
     const b = await body(req);
     const toUserId = b.toUserId ? oid(b.toUserId) : null;
     const type = clean(b.type, 20);
-    if (!['offer', 'answer', 'candidate'].includes(type)) throw err('Signal turi noto‘g‘ri');
+    if (!['offer', 'answer', 'candidate', 'screen-share'].includes(type)) throw err('Signal turi noto‘g‘ri');
     await signals.insertOne({
       callId: call._id,
       fromUserId: me._id,
